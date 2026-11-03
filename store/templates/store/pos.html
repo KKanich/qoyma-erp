@@ -1,0 +1,162 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Qoyma — POS</title>
+<style>
+  body { font-family: -apple-system, Segoe UI, Roboto, sans-serif; background: #0f1b2d; color: #e8eef7; margin: 0; }
+  header { display: flex; justify-content: space-between; align-items: center; padding: 14px 24px; background: #16263d; }
+  header b { font-size: 18px; } header span { color: #8fa3bf; font-size: 14px; }
+  header a, header button.link { color: #7fc8ff; background: none; border: 0; font-size: 14px; cursor: pointer; margin-left: 14px; }
+  main { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; padding: 20px 24px; }
+  @media (max-width: 800px) { main { grid-template-columns: 1fr; } }
+  section { background: #16263d; border-radius: 12px; padding: 18px; }
+  h2 { margin: 0 0 12px; font-size: 16px; color: #8fa3bf; text-transform: uppercase; letter-spacing: .5px; }
+  table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  th, td { text-align: left; padding: 7px 6px; border-bottom: 1px solid #23395a; }
+  th { color: #8fa3bf; font-weight: 500; }
+  .low { color: #ffb84d; font-weight: 600; }
+  .row { display: flex; gap: 8px; margin-bottom: 10px; flex-wrap: wrap; }
+  input, select { padding: 9px; border-radius: 6px; border: 1px solid #2c4262; background: #0f1b2d; color: #e8eef7; font-size: 15px; }
+  input#barcode { flex: 1; min-width: 160px; } input#qty { width: 80px; }
+  button { padding: 9px 14px; border: 0; border-radius: 6px; background: #2c4262; color: #fff; font-size: 14px; cursor: pointer; }
+  button.primary { background: #2fbf71; font-weight: 600; width: 100%; padding: 12px; font-size: 16px; margin-top: 12px; }
+  #msg { margin-top: 12px; padding: 10px; border-radius: 6px; display: none; font-size: 14px; }
+  #msg.ok { display: block; background: #174a32; color: #a6f0c6; }
+  #msg.bad { display: block; background: #5c1f27; color: #ffb3bd; }
+  .total { font-size: 20px; font-weight: 700; text-align: right; margin-top: 10px; }
+  .muted { color: #8fa3bf; font-size: 13px; }
+</style>
+</head>
+<body>
+<header>
+  <div><b>Qoyma POS</b> <span>Bereke Grocery Store</span></div>
+  <div>
+    <span>{{ request.user.username }} ({{ request.user.role }})</span>
+    {% if request.user.role != 'Cashier' %}<a href="/api/alerts/">Alerts</a><a href="/admin/">Admin panel</a>{% endif %}
+    <form method="post" action="/logout/" style="display:inline">{% csrf_token %}<button class="link" type="submit">Log out</button></form>
+  </div>
+</header>
+<main>
+  <section>
+    <h2>Checkout</h2>
+    <div class="row">
+      <input id="barcode" placeholder="Scan or type barcode (13 digits)" autofocus>
+      <input id="qty" type="number" value="1" min="0.01" step="0.01">
+      <button onclick="addItem()">Add</button>
+    </div>
+    <table>
+      <thead><tr><th>Product</th><th>Qty</th><th>Price</th><th>Subtotal</th><th></th></tr></thead>
+      <tbody id="cart"><tr><td colspan="5" class="muted">Cart is empty</td></tr></tbody>
+    </table>
+    <div class="total">Total: <span id="total">0.00</span> ₸</div>
+    <div class="row" style="margin-top:10px">
+      <select id="payment">
+        <option value="Cash">Cash</option>
+        <option value="Kaspi_QR">Kaspi QR</option>
+        <option value="Card">Card</option>
+      </select>
+    </div>
+    <button class="primary" onclick="checkout()">Complete sale</button>
+    <div id="msg"></div>
+  </section>
+
+  <section>
+    <h2>Stock in database</h2>
+    <table>
+      <thead><tr><th>Barcode</th><th>Product</th><th>Price</th><th>In stock</th><th>Expiry</th></tr></thead>
+      <tbody>
+      {% for p in products %}
+        <tr>
+          <td>{{ p.barcode }}</td>
+          <td>{{ p.name }}</td>
+          <td>{{ p.sale_price }}</td>
+          <td class="{% if p.quantity <= p.min_quantity %}low{% endif %}">{{ p.quantity }}</td>
+          <td>{{ p.expiry_date|date:"Y-m-d" }}</td>
+        </tr>
+      {% empty %}
+        <tr><td colspan="5" class="muted">No products. Run: python manage.py seed_demo</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+    <p class="muted">Orange = stock at or below minimum level.</p>
+  </section>
+</main>
+
+{{ products_json|json_script:"products-data" }}
+<script>
+  const products = JSON.parse(document.getElementById('products-data').textContent);
+  const cart = [];
+
+  function getCookie(name) {
+    const m = document.cookie.match('(^|;)\\s*' + name + '=([^;]*)');
+    return m ? decodeURIComponent(m[2]) : '';
+  }
+
+  function show(text, ok) {
+    const el = document.getElementById('msg');
+    el.textContent = text;
+    el.className = ok ? 'ok' : 'bad';
+  }
+
+  function render() {
+    const body = document.getElementById('cart');
+    if (!cart.length) {
+      body.innerHTML = '<tr><td colspan="5" class="muted">Cart is empty</td></tr>';
+      document.getElementById('total').textContent = '0.00';
+      return;
+    }
+    let total = 0;
+    body.innerHTML = '';
+    cart.forEach((it, i) => {
+      const sub = it.qty * it.price;
+      total += sub;
+      const tr = document.createElement('tr');
+      tr.innerHTML = `<td>${it.name}</td><td>${it.qty}</td><td>${it.price.toFixed(2)}</td>` +
+                     `<td>${sub.toFixed(2)}</td><td><button onclick="removeItem(${i})">✕</button></td>`;
+      body.appendChild(tr);
+    });
+    document.getElementById('total').textContent = total.toFixed(2);
+  }
+
+  function addItem() {
+    const barcode = document.getElementById('barcode').value.trim();
+    const qty = parseFloat(document.getElementById('qty').value);
+    const p = products[barcode];
+    if (!p) { show('Product with barcode ' + barcode + ' not found', false); return; }
+    if (!(qty > 0)) { show('Quantity must be greater than 0', false); return; }
+    cart.push({ barcode, qty, name: p.name, price: parseFloat(p.price) });
+    document.getElementById('barcode').value = '';
+    document.getElementById('qty').value = 1;
+    document.getElementById('barcode').focus();
+    document.getElementById('msg').className = '';
+    render();
+  }
+
+  function removeItem(i) { cart.splice(i, 1); render(); }
+
+  document.getElementById('barcode').addEventListener('keydown', e => { if (e.key === 'Enter') addItem(); });
+
+  async function checkout() {
+    if (!cart.length) { show('Cart is empty', false); return; }
+    const res = await fetch('/api/checkout/', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCookie('csrftoken') },
+      body: JSON.stringify({
+        items: cart.map(it => ({ barcode: it.barcode, qty: it.qty })),
+        payment_method: document.getElementById('payment').value,
+      }),
+    });
+    const data = await res.json();
+    if (res.ok) {
+      show(`Sale #${data.sale_id} completed. Total: ${data.total} ₸. Stock updated — reloading…`, true);
+      cart.length = 0; render();
+      setTimeout(() => location.reload(), 1800);
+    } else {
+      show('Error: ' + data.error + ' (nothing was saved — transaction rolled back)', false);
+    }
+  }
+</script>
+</body>
+</html>

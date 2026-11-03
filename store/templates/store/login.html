@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Qoyma — Login</title>
+<style>
+  body { font-family: -apple-system, Segoe UI, Roboto, sans-serif; background: #0f1b2d; color: #e8eef7;
+         display: flex; align-items: center; justify-content: center; min-height: 100vh; margin: 0; }
+  form { background: #16263d; padding: 32px; border-radius: 12px; width: 300px; }
+  h1 { margin: 0 0 4px; font-size: 22px; } p { margin: 0 0 20px; color: #8fa3bf; font-size: 14px; }
+  label { display: block; font-size: 13px; margin: 12px 0 4px; color: #8fa3bf; }
+  input { width: 100%; box-sizing: border-box; padding: 10px; border-radius: 6px; border: 1px solid #2c4262;
+          background: #0f1b2d; color: #e8eef7; font-size: 15px; }
+  button { margin-top: 20px; width: 100%; padding: 11px; border: 0; border-radius: 6px; background: #2fbf71;
+           color: #fff; font-size: 15px; font-weight: 600; cursor: pointer; }
+  .err { background: #5c1f27; color: #ffb3bd; padding: 8px 10px; border-radius: 6px; font-size: 13px; margin-bottom: 8px; }
+</style>
+</head>
+<body>
+<form method="post">
+  {% csrf_token %}
+  <h1>Qoyma ERP</h1>
+  <p>Bereke Grocery Store — staff login</p>
+  {% if form.errors %}<div class="err">Wrong username or password.</div>{% endif %}
+  <label for="id_username">Username</label>
+  <input type="text" name="username" id="id_username" autofocus required>
+  <label for="id_password">Password</label>
+  <input type="password" name="password" id="id_password" required>
+  <button type="submit">Log in</button>
+</form>
+</body>
+</html>
