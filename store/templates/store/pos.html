@@ -1,33 +1,11 @@
+{% load static %}
 <!doctype html>
 <html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Qoyma — POS</title>
-<style>
-  body { font-family: -apple-system, Segoe UI, Roboto, sans-serif; background: #0f1b2d; color: #e8eef7; margin: 0; }
-  header { display: flex; justify-content: space-between; align-items: center; padding: 14px 24px; background: #16263d; }
-  header b { font-size: 18px; } header span { color: #8fa3bf; font-size: 14px; }
-  header a, header button.link { color: #7fc8ff; background: none; border: 0; font-size: 14px; cursor: pointer; margin-left: 14px; }
-  main { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; padding: 20px 24px; }
-  @media (max-width: 800px) { main { grid-template-columns: 1fr; } }
-  section { background: #16263d; border-radius: 12px; padding: 18px; }
-  h2 { margin: 0 0 12px; font-size: 16px; color: #8fa3bf; text-transform: uppercase; letter-spacing: .5px; }
-  table { width: 100%; border-collapse: collapse; font-size: 14px; }
-  th, td { text-align: left; padding: 7px 6px; border-bottom: 1px solid #23395a; }
-  th { color: #8fa3bf; font-weight: 500; }
-  .low { color: #ffb84d; font-weight: 600; }
-  .row { display: flex; gap: 8px; margin-bottom: 10px; flex-wrap: wrap; }
-  input, select { padding: 9px; border-radius: 6px; border: 1px solid #2c4262; background: #0f1b2d; color: #e8eef7; font-size: 15px; }
-  input#barcode { flex: 1; min-width: 160px; } input#qty { width: 80px; }
-  button { padding: 9px 14px; border: 0; border-radius: 6px; background: #2c4262; color: #fff; font-size: 14px; cursor: pointer; }
-  button.primary { background: #2fbf71; font-weight: 600; width: 100%; padding: 12px; font-size: 16px; margin-top: 12px; }
-  #msg { margin-top: 12px; padding: 10px; border-radius: 6px; display: none; font-size: 14px; }
-  #msg.ok { display: block; background: #174a32; color: #a6f0c6; }
-  #msg.bad { display: block; background: #5c1f27; color: #ffb3bd; }
-  .total { font-size: 20px; font-weight: 700; text-align: right; margin-top: 10px; }
-  .muted { color: #8fa3bf; font-size: 13px; }
-</style>
+<link rel="stylesheet" href="{% static 'store/css/pos.css' %}">
 </head>
 <body>
 <header>
@@ -35,7 +13,7 @@
   <div>
     <span>{{ request.user.username }} ({{ request.user.role }})</span>
     {% if request.user.role != 'Cashier' %}<a href="/api/alerts/">Alerts</a><a href="/admin/">Admin panel</a>{% endif %}
-    <form method="post" action="/logout/" style="display:inline">{% csrf_token %}<button class="link" type="submit">Log out</button></form>
+    <form method="post" action="/logout/" class="logout-form">{% csrf_token %}<button class="link" type="submit">Log out</button></form>
   </div>
 </header>
 <main>
@@ -51,7 +29,7 @@
       <tbody id="cart"><tr><td colspan="5" class="muted">Cart is empty</td></tr></tbody>
     </table>
     <div class="total">Total: <span id="total">0.00</span> ₸</div>
-    <div class="row" style="margin-top:10px">
+    <div class="row payment-row">
       <select id="payment">
         <option value="Cash">Cash</option>
         <option value="Kaspi_QR">Kaspi QR</option>
