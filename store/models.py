@@ -26,7 +26,6 @@ class Supplier(models.Model):
     def __str__(self):
         return self.name
 
-# Data rules from Task 7 (Data Dictionary), owner: Systems Analysis & Requirements Lead
 barcode_validator = RegexValidator(
     regex=r'^\d{13}$',
     message='Barcode must be exactly 13 digits (EAN-13).',
@@ -44,8 +43,6 @@ class Product(models.Model):
     expiry_date = models.DateField()
 
     def save(self, *args, **kwargs):
-        # Governance rule (Task 7): a Product that breaks a data rule is never saved,
-        # no matter where it comes from (admin form, POS, script).
         self.full_clean()
         super().save(*args, **kwargs)
 
