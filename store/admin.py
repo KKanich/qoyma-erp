@@ -7,14 +7,21 @@ from .models import (Category, Product, Sale, SaleItem, StockReceipt,
 
 @admin.register(User)
 class QoymaUserAdmin(UserAdmin):
-    fieldsets = UserAdmin.fieldsets + (('Qoyma role', {'fields': ('role',)}),)
-    add_fieldsets = UserAdmin.add_fieldsets + (('Qoyma role', {'fields': ('role',)}),)
+    fieldsets = UserAdmin.fieldsets + (
+        ('Qoyma role', {'fields': ('role',)}),
+    )
+    add_fieldsets = UserAdmin.add_fieldsets + (
+        ('Qoyma role', {'fields': ('role',)}),
+    )
     list_display = ('username', 'role', 'is_staff')
 
 
 @admin.register(Product)
 class ProductAdmin(admin.ModelAdmin):
-    list_display = ('name', 'barcode', 'category', 'sale_price', 'quantity', 'min_quantity', 'expiry_date')
+    list_display = (
+        'name', 'barcode', 'category', 'sale_price', 'quantity',
+        'min_quantity', 'expiry_date',
+    )
     search_fields = ('name', 'barcode')
     list_filter = ('category',)
 
@@ -27,7 +34,9 @@ class SaleItemInline(admin.TabularInline):
 
 @admin.register(Sale)
 class SaleAdmin(admin.ModelAdmin):
-    list_display = ('id', 'cashier', 'created_at', 'payment_method', 'total_amount')
+    list_display = (
+        'id', 'cashier', 'created_at', 'payment_method', 'total_amount',
+    )
     inlines = [SaleItemInline]
 
 
@@ -38,7 +47,9 @@ class StockReceiptItemInline(admin.TabularInline):
 
 @admin.register(StockReceipt)
 class StockReceiptAdmin(admin.ModelAdmin):
-    list_display = ('id', 'supplier', 'received_by', 'received_at', 'total_amount')
+    list_display = (
+        'id', 'supplier', 'received_by', 'received_at', 'total_amount',
+    )
     inlines = [StockReceiptItemInline]
 
 
