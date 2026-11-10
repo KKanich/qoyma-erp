@@ -1,7 +1,8 @@
 import json
 from decimal import Decimal, InvalidOperation
-from datetime import timedelta
+from datetime import date, timedelta
 
+from django.core.exceptions import ValidationError
 from django.db import transaction
 from django.db.models import F
 from django.http import JsonResponse
@@ -10,7 +11,8 @@ from django.views.decorators.csrf import ensure_csrf_cookie
 from django.utils import timezone
 
 from .decorators import role_required
-from .models import Product, Sale, SaleItem
+from .models import Product, Sale, SaleItem, Supplier
+from .services import receive_stock
 
 
 class CheckoutError(Exception):
@@ -112,3 +114,60 @@ def dashboard_alerts(request):
             for p in low_stock_alerts
         ],
     })
+
+
+@role_required('Manager', 'Admin')
+def stock_receipt_api(request):
+    """Register goods arriving from a supplier. Manager/Admin only (cashier -> 403)."""
+    if request.method != 'POST':
+        return JsonResponse({'error': 'POST method required'}, status=405)
+    try:
+        data = json.loads(request.body)
+        supplier = Supplier.objects.get(pk=data.get('supplier_id'))
+        items = []
+        for it in data.get('items', []):
+            it = dict(it)
+            it['expiry_date'] = date.fromisoformat(it['expiry_date']) if it.get('expiry_date') else None
+            items.append(it)
+    except (json.JSONDecodeError, Supplier.DoesNotExist, ValueError, KeyError) as e:
+        return JsonResponse({'error': f'Invalid request: {e}'}, status=400)
+
+    try:
+        receipt = receive_stock(request.user, supplier, items)
+    except ValidationError as e:
+        return JsonResponse({'error': ' '.join(e.messages)}, status=400)
+
+    return JsonResponse({'status': 'Success', 'receipt_id': receipt.id, 'total': str(receipt.total_amount)})
+
+
+@role_required('Manager', 'Admin')
+def receive_page(request):
+    """Manager screen for receiving goods. Uses the same receive_stock() rules (AC-R1..AC-R4)."""
+    ctx = {
+        'suppliers': Supplier.objects.order_by('name'),
+        'default_expiry': (timezone.localdate() + timedelta(days=10)).isoformat(),
+        'form': {},
+    }
+    if request.method == 'POST':
+        form = {k: request.POST.get(k, '').strip() for k in ('supplier', 'barcode', 'qty', 'price', 'expiry')}
+        ctx['form'] = form
+        try:
+            supplier = Supplier.objects.get(pk=form['supplier'])
+            expiry = date.fromisoformat(form['expiry']) if form['expiry'] else None
+            product = Product.objects.filter(barcode=form['barcode']).first()
+            before = product.quantity if product else None
+            receive_stock(request.user, supplier, [{
+                'barcode': form['barcode'], 'qty': form['qty'],
+                'purchase_price': form['price'], 'expiry_date': expiry,
+            }])
+            product.refresh_from_db()
+            ctx['success'] = (f'Received {form["qty"]} × {product.name}. '
+                              f'Stock: {before} → {product.quantity}')
+            ctx['changed'] = product.barcode
+            ctx['form'] = {}
+        except (Supplier.DoesNotExist, ValueError):
+            ctx['error'] = 'Check the supplier and the date.'
+        except ValidationError as e:
+            ctx['error'] = ' '.join(e.messages)
+    ctx['products'] = Product.objects.order_by('name')
+    return render(request, 'store/receive.html', ctx)

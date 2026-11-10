@@ -1,0 +1,83 @@
+{% load static %}
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Qoyma — Receive stock</title>
+<link rel="stylesheet" href="{% static 'store/css/pos.css' %}">
+<style>
+  .field { margin-bottom: 12px; }
+  .field label { display: block; font-size: 13px; color: #8fa3bf; margin-bottom: 4px; }
+  .field input, .field select { width: 100%; box-sizing: border-box; }
+  .notice { padding: 12px; border-radius: 8px; margin-bottom: 14px; font-size: 15px; }
+  .notice.ok { background: #174a32; color: #a6f0c6; }
+  .notice.bad { background: #5c1f27; color: #ffb3bd; }
+  .ac { font-size: 12px; color: #8fa3bf; margin-top: 14px; line-height: 1.6; }
+  tr.changed td { color: #a6f0c6; font-weight: 600; }
+</style>
+</head>
+<body>
+<header>
+  <div><b>Qoyma — Receive stock</b> <span>Bereke Grocery Store</span></div>
+  <div>
+    <span>{{ request.user.username }} ({{ request.user.role }})</span>
+    <a href="/">POS</a><a href="/admin/">Admin panel</a>
+    <form method="post" action="/logout/" class="logout-form" style="display:inline">{% csrf_token %}<button class="link" type="submit">Log out</button></form>
+  </div>
+</header>
+<main>
+  <section>
+    <h2>New delivery from supplier</h2>
+
+    {% if success %}<div class="notice ok">{{ success }}</div>{% endif %}
+    {% if error %}<div class="notice bad">Error: {{ error }} — nothing was saved.</div>{% endif %}
+
+    <form method="post">
+      {% csrf_token %}
+      <div class="field">
+        <label for="supplier">Supplier</label>
+        <select id="supplier" name="supplier">
+          {% for s in suppliers %}<option value="{{ s.id }}" {% if form.supplier == s.id|stringformat:"s" %}selected{% endif %}>{{ s.name }}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="field">
+        <label for="barcode">Product barcode (13 digits)</label>
+        <input id="barcode" name="barcode" value="{{ form.barcode|default:'4870000000011' }}" required>
+      </div>
+      <div class="field">
+        <label for="qty">Quantity received</label>
+        <input id="qty" name="qty" type="number" step="0.01" value="{{ form.qty|default:'50' }}" required>
+      </div>
+      <div class="field">
+        <label for="price">Purchase price per unit (₸)</label>
+        <input id="price" name="price" type="number" step="0.01" value="{{ form.price|default:'400' }}" required>
+      </div>
+      <div class="field">
+        <label for="expiry">Expiry date of this batch</label>
+        <input id="expiry" name="expiry" type="date" value="{{ form.expiry|default:default_expiry }}" required>
+      </div>
+      <button class="primary" type="submit">Receive goods</button>
+    </form>
+
+    <div class="ac">
+      AC-R1 stock increases · AC-R2 quantity &gt; 0 · AC-R3 only Manager/Admin · AC-R4 no expired goods
+    </div>
+  </section>
+
+  <section>
+    <h2>Stock in database</h2>
+    <table>
+      <thead><tr><th>Barcode</th><th>Product</th><th>In stock</th><th>Expiry</th></tr></thead>
+      <tbody>
+      {% for p in products %}
+        <tr class="{% if p.barcode == changed %}changed{% endif %}">
+          <td>{{ p.barcode }}</td><td>{{ p.name }}</td><td>{{ p.quantity }}</td><td>{{ p.expiry_date|date:"Y-m-d" }}</td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </section>
+</main>
+</body>
+</html>

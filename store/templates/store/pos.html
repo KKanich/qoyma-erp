@@ -12,7 +12,7 @@
   <div><b>Qoyma POS</b> <span>Bereke Grocery Store</span></div>
   <div>
     <span>{{ request.user.username }} ({{ request.user.role }})</span>
-    {% if request.user.role != 'Cashier' %}<a href="/api/alerts/">Alerts</a><a href="/admin/">Admin panel</a>{% endif %}
+    {% if request.user.role != 'Cashier' %}<a href="/receive/">Receive stock</a><a href="/api/alerts/">Alerts</a><a href="/admin/">Admin panel</a>{% endif %}
     <form method="post" action="/logout/" class="logout-form">{% csrf_token %}<button class="link" type="submit">Log out</button></form>
   </div>
 </header>

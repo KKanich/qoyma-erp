@@ -14,7 +14,8 @@ from django.test import TestCase
 from django.urls import reverse
 from django.utils import timezone
 
-from .models import Category, Product, Sale, SaleItem, User
+from .models import (Category, Product, Sale, SaleItem, StockReceipt,
+                     Supplier, User)
 
 
 def make_product(**overrides):
@@ -129,3 +130,77 @@ class CheckoutAcceptanceTest(TestCase):
         self.assertEqual(res.status_code, 302)
         self.assertIn('/login/', res['Location'])
         self.assertEqual(Sale.objects.count(), 0)
+
+
+class StockReceiptAcceptanceTest(TestCase):
+    """Acceptance criteria AC-R1..AC-R4 for the stock receipt process (Requirements: Aizada)."""
+
+    def setUp(self):
+        self.manager = User.objects.create_user('manager', password='pass12345', role='Manager')
+        self.cashier = User.objects.create_user('cashier', password='pass12345', role='Cashier')
+        self.supplier = Supplier.objects.create(name='Almaty Food Distribution', phone='+7 727 000 00 00')
+        self.milk = make_product(barcode='4870000000011', name='Milk', quantity=Decimal('20.00'))
+        self.future = (timezone.localdate() + timedelta(days=10)).isoformat()
+
+    def receive(self, qty, expiry=None):
+        return self.client.post(
+            reverse('stock_receipt'),
+            data=json.dumps({'supplier_id': self.supplier.id, 'items': [{
+                'barcode': '4870000000011', 'qty': qty, 'purchase_price': '400.00',
+                'expiry_date': expiry or self.future,
+            }]}),
+            content_type='application/json',
+        )
+
+    def test_acr1_received_quantity_is_added_to_stock(self):
+        """AC-R1: Milk 20 + received 50 = 70."""
+        self.client.force_login(self.manager)
+        res = self.receive(50)
+        self.assertEqual(res.status_code, 200)
+        self.milk.refresh_from_db()
+        self.assertEqual(self.milk.quantity, Decimal('70.00'))
+        self.assertEqual(StockReceipt.objects.get().total_amount, Decimal('20000.00'))
+
+    def test_acr2_negative_or_zero_quantity_is_rejected(self):
+        """AC-R2: -5 and 0 are refused; stock stays 20; no receipt saved."""
+        self.client.force_login(self.manager)
+        for bad_qty in (-5, 0):
+            res = self.receive(bad_qty)
+            self.assertEqual(res.status_code, 400)
+        self.milk.refresh_from_db()
+        self.assertEqual(self.milk.quantity, Decimal('20.00'))
+        self.assertEqual(StockReceipt.objects.count(), 0)
+
+    def test_acr3_cashier_cannot_receive_stock(self):
+        """AC-R3: Cashier gets 403; stock stays 20."""
+        self.client.force_login(self.cashier)
+        res = self.receive(50)
+        self.assertEqual(res.status_code, 403)
+        self.milk.refresh_from_db()
+        self.assertEqual(self.milk.quantity, Decimal('20.00'))
+
+    def test_acr4_expired_goods_are_rejected(self):
+        """AC-R4: Expiry date in the past is refused; stock stays 20."""
+        self.client.force_login(self.manager)
+        yesterday = (timezone.localdate() - timedelta(days=1)).isoformat()
+        res = self.receive(50, expiry=yesterday)
+        self.assertEqual(res.status_code, 400)
+        self.assertIn('expired', res.json()['error'])
+        self.milk.refresh_from_db()
+        self.assertEqual(self.milk.quantity, Decimal('20.00'))
+        self.assertEqual(StockReceipt.objects.count(), 0)
+
+    def test_acr_page_manager_receives_and_cashier_is_blocked(self):
+        """Receive stock page: manager adds 50 Milk (20 -> 70); cashier gets 403."""
+        self.client.force_login(self.cashier)
+        self.assertEqual(self.client.get(reverse('receive_page')).status_code, 403)
+
+        self.client.force_login(self.manager)
+        res = self.client.post(reverse('receive_page'), {
+            'supplier': self.supplier.id, 'barcode': '4870000000011',
+            'qty': '50', 'price': '400', 'expiry': self.future,
+        })
+        self.assertEqual(res.status_code, 200)
+        self.assertContains(res, 'Stock: 20.00')
+        self.milk.refresh_from_db()
+        self.assertEqual(self.milk.quantity, Decimal('70.00'))

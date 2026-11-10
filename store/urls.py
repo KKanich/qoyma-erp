@@ -9,4 +9,6 @@ urlpatterns = [
     path('logout/', auth_views.LogoutView.as_view(), name='logout'),
     path('api/checkout/', views.pos_checkout, name='pos_checkout'),
     path('api/alerts/', views.dashboard_alerts, name='dashboard_alerts'),
+    path('api/stock-receipt/', views.stock_receipt_api, name='stock_receipt'),
+    path('receive/', views.receive_page, name='receive_page'),
 ]
