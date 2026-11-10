@@ -11,4 +11,5 @@ urlpatterns = [
     path('api/alerts/', views.dashboard_alerts, name='dashboard_alerts'),
     path('api/stock-receipt/', views.stock_receipt_api, name='stock_receipt'),
     path('receive/', views.receive_page, name='receive_page'),
+    path('report/', views.report_page, name='report_page'),
 ]

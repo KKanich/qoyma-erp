@@ -13,6 +13,8 @@ from django.utils import timezone
 from .decorators import role_required
 from .models import Product, Sale, SaleItem, Supplier
 from .services import receive_stock
+from .reports import daily_sales_summary
+
 
 
 class CheckoutError(Exception):
@@ -171,3 +173,10 @@ def receive_page(request):
             ctx['error'] = ' '.join(e.messages)
     ctx['products'] = Product.objects.order_by('name')
     return render(request, 'store/receive.html', ctx)
+
+
+@role_required('Manager', 'Admin')
+def report_page(request):
+    """Daily sales report dashboard for the manager (AC-D1..AC-D8, AC-D11)."""
+    summary = daily_sales_summary()
+    return render(request, 'store/report.html', {'s': summary})
