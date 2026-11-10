@@ -60,9 +60,13 @@ copy, load test, or timed 30-minute recovery objective was verified.
 
 ## CI status
 
-A workflow is supplied for Python 3.11 / Linux / Playwright Chromium. Local
-Windows/Chrome outcomes do not certify that environment. Check the GitHub Actions
-run after push; its result is not asserted in this local execution report.
+A workflow is supplied for Python 3.11 / Linux / Playwright Chromium. The
+[first CI run](https://github.com/KKanich/qoyma-erp/actions/runs/42817039510)
+for commit `dccd5bd` failed before any steps started. GitHub's annotation states:
+"The job was not started because your account is locked due to a billing issue."
+The repository owner must resolve the account issue and rerun the workflow.
+This is an infrastructure blocker, not a test failure. Local Windows/Chrome
+outcomes do not certify the unexecuted Linux/Chromium environment.
 
 ## Follow-up
 
