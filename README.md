@@ -15,13 +15,30 @@ Qoyma is a lightweight, offline-capable ERP system designed for small grocery st
 4. Architecture & Security Lead: Ramazan (24B031964)
 5. Testing, Analytics & Integration Lead: Adilet (24B032017)
 
-## How to run
+## How to run on a new computer
+
+Requirements: Python 3.11+ and git.
 
 ```bash
+git clone <repository-url>
+cd qoyma-erp
+
 python3 -m venv venv
 source venv/bin/activate          # Windows: venv\Scripts\activate
 pip install -r requirements.txt
-python manage.py makemigrations store
+
+cp .env.example .env              # Windows: copy .env.example .env
+```
+
+Open `.env` and put your own random `SECRET_KEY` there. Generate one with:
+
+```bash
+python -c "import secrets; print(secrets.token_urlsafe(50))"
+```
+
+Then create the database and start the server:
+
+```bash
 python manage.py migrate
 python manage.py seed_demo
 python manage.py test store -v 2
@@ -29,6 +46,21 @@ python manage.py runserver
 ```
 
 Open http://127.0.0.1:8000/ and log in with a demo user printed by `seed_demo`.
+
+## Configuration (.env)
+
+`SECRET_KEY` and `DEBUG` are read from environment variables, so they are not
+stored in the repository. `python-dotenv` loads them from the `.env` file in the
+project root; `.env` is listed in `.gitignore` and never committed, `.env.example`
+is the template.
+
+| Variable | Required | Meaning |
+|----------|----------|---------|
+| `SECRET_KEY` | yes | Django cryptographic key, unique per installation. The server refuses to start without it. |
+| `DEBUG` | no (default `False`) | `True` (or `1`) only for local development. Keep `False` anywhere else. |
+
+Variables can also be exported in the shell instead of `.env` — a real environment
+variable takes priority over the file.
 
 ## Automated tests
 
