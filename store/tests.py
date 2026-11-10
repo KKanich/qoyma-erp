@@ -129,3 +129,75 @@ class CheckoutAcceptanceTest(TestCase):
         self.assertEqual(res.status_code, 302)
         self.assertIn('/login/', res['Location'])
         self.assertEqual(Sale.objects.count(), 0)
+
+
+class StockReceiptAcceptanceTest(TestCase):
+    def setUp(self):
+        from .models import Supplier
+        self.user = User.objects.create_superuser('receiver', password='test-password')
+        self.supplier = Supplier.objects.create(name='Demo supplier', phone='123')
+        self.product = make_product()
+        self.client.force_login(self.user)
+
+    def payload(self):
+        return {
+            'supplier': self.supplier.pk, 'received_by': self.user.pk,
+            'items-TOTAL_FORMS': '1', 'items-INITIAL_FORMS': '0',
+            'items-MIN_NUM_FORMS': '1', 'items-MAX_NUM_FORMS': '1000',
+            'items-0-product': self.product.pk, 'items-0-quantity': '5.50',
+            'items-0-purchase_price': '100.00', '_save': 'Save',
+        }
+
+    def test_admin_save_posts_stock_and_total_once(self):
+        from .models import StockReceipt
+        response = self.client.post(reverse('admin:store_stockreceipt_add'), self.payload())
+        self.assertEqual(response.status_code, 302)
+        receipt = StockReceipt.objects.get()
+        self.product.refresh_from_db()
+        self.assertEqual(self.product.quantity, Decimal('25.50'))
+        self.assertEqual(receipt.total_amount, Decimal('550.00'))
+        self.assertTrue(receipt.posted)
+        self.assertFalse(receipt.post())
+        self.product.refresh_from_db()
+        self.assertEqual(self.product.quantity, Decimal('25.50'))
+        self.assertEqual(self.client.post(
+            reverse('admin:store_stockreceipt_change', args=[receipt.pk]), self.payload(),
+        ).status_code, 403)
+
+    def test_invalid_line_saves_nothing(self):
+        from .models import StockReceipt
+        data = self.payload()
+        data.update({'items-TOTAL_FORMS': '2', 'items-1-product': self.product.pk,
+                     'items-1-quantity': '-1', 'items-1-purchase_price': '100'})
+        response = self.client.post(reverse('admin:store_stockreceipt_add'), data)
+        self.assertEqual(response.status_code, 200)
+        self.assertFalse(StockReceipt.objects.exists())
+        self.product.refresh_from_db()
+        self.assertEqual(self.product.quantity, Decimal('20.00'))
+
+    def test_empty_receipt_is_rejected(self):
+        from .models import StockReceipt
+        data = self.payload()
+        data['items-TOTAL_FORMS'] = '0'
+        self.assertEqual(self.client.post(reverse('admin:store_stockreceipt_add'), data).status_code, 200)
+        self.assertFalse(StockReceipt.objects.exists())
+
+    def test_failure_after_stock_update_rolls_back_entire_admin_save(self):
+        from unittest.mock import patch
+        from .models import StockReceipt, StockReceiptItem
+        with patch.object(StockReceipt._meta.get_field('total_amount'), 'clean',
+                          side_effect=ValidationError('Simulated posting failure')):
+            with self.assertRaises(ValidationError):
+                self.client.post(reverse('admin:store_stockreceipt_add'), self.payload())
+        self.product.refresh_from_db()
+        self.assertEqual(self.product.quantity, Decimal('20.00'))
+        self.assertFalse(StockReceipt.objects.exists())
+        self.assertFalse(StockReceiptItem.objects.exists())
+
+    def test_separate_receipts_accumulate_stock(self):
+        from .models import StockReceipt
+        for _ in range(2):
+            self.assertEqual(self.client.post(reverse('admin:store_stockreceipt_add'), self.payload()).status_code, 302)
+        self.product.refresh_from_db()
+        self.assertEqual(self.product.quantity, Decimal('31.00'))
+        self.assertEqual(StockReceipt.objects.filter(posted=True).count(), 2)
