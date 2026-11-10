@@ -75,13 +75,18 @@ python manage.py test store -v 2
 Backups default to `backup/`; use `--output-dir` for another local directory.
 Each backup has a unique UTC filename and passes SQLite integrity and foreign-key
 checks. Recovery writes a new file and refuses to overwrite the live database.
-Database files and the personal defense cheatsheet are ignored by Git.
+Database files are ignored by Git.
 
 See [backup operations and recovery runbook](backup/README.md) for scheduling,
 retention, off-device storage, and the offline recovery procedure. Scheduling and
 off-device copying are proposed operational steps, not automatically enabled.
 
 ## Automated tests
+
+See the [QA guide](qa/README.md) for user stories, isolated unit tests, real
+Chromium end-to-end tests, backup test provenance, execution results and open
+defects. Browser tests require `requirements-test.txt` and the Chromium install
+documented there; `python manage.py test store -v 2` runs the non-browser suite.
 
 The testing lead owns the backup test suite and formal verification report.
 The seven automated backup tests are in `store/test_backup.py`; run them with
