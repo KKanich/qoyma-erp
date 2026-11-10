@@ -1,0 +1,72 @@
+{% load static %}
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Qoyma — Daily sales report</title>
+<link rel="stylesheet" href="{% static 'store/css/pos.css' %}">
+<style>
+  .cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 16px; }
+  .card { background: #0f1b2d; border-radius: 10px; padding: 14px; }
+  .card .label { font-size: 13px; color: #8fa3bf; }
+  .card .value { font-size: 24px; font-weight: 700; margin-top: 4px; }
+  .low { color: #ffb84d; font-weight: 600; }
+</style>
+</head>
+<body>
+<header>
+  <div><b>Daily sales report</b> <span>{{ s.day|date:"d.m.Y" }} · Bereke Grocery Store</span></div>
+  <div>
+    <span>{{ request.user.username }} ({{ request.user.role }})</span>
+    <a href="/">POS</a><a href="/receive/">Receive stock</a><a href="/admin/">Admin panel</a>
+  </div>
+</header>
+<main>
+  <section>
+    <h2>Today</h2>
+    <div class="cards">
+      <div class="card"><div class="label">Total sales</div><div class="value">{{ s.total }} ₸</div></div>
+      <div class="card"><div class="label">Receipts</div><div class="value">{{ s.receipts }}</div></div>
+      <div class="card"><div class="label">Average receipt</div><div class="value">{{ s.average }} ₸</div></div>
+    </div>
+
+    <h2>By payment method</h2>
+    <table>
+      <thead><tr><th>Method</th><th>Amount, ₸</th></tr></thead>
+      <tbody>
+      {% for method, amount in s.by_payment.items %}
+        <tr><td>{{ method }}</td><td>{{ amount }}</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </section>
+
+  <section>
+    <h2>Top products today</h2>
+    <table>
+      <thead><tr><th>Product</th><th>Qty</th><th>Amount, ₸</th></tr></thead>
+      <tbody>
+      {% for p in s.top_products %}
+        <tr><td>{{ p.product__name }}</td><td>{{ p.qty }}</td><td>{{ p.amount }}</td></tr>
+      {% empty %}
+        <tr><td colspan="3" class="muted">No sales today</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+
+    <h2 style="margin-top:18px">Low stock</h2>
+    <table>
+      <thead><tr><th>Product</th><th>In stock</th><th>Minimum</th></tr></thead>
+      <tbody>
+      {% for p in s.low_stock %}
+        <tr><td>{{ p.name }}</td><td class="low">{{ p.quantity }}</td><td>{{ p.min_quantity }}</td></tr>
+      {% empty %}
+        <tr><td colspan="3" class="muted">All products are above minimum</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </section>
+</main>
+</body>
+</html>
