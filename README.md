@@ -62,7 +62,29 @@ is the template.
 Variables can also be exported in the shell instead of `.env` — a real environment
 variable takes priority over the file.
 
+## Database backup and recovery
+
+The database developer/steward maintains verified, full SQLite snapshots. Run:
+
+```bash
+python manage.py backup_db
+python manage.py restore_db backup/<backup-filename>.sqlite3 --target backup/recovery-drill.sqlite3
+python manage.py test store -v 2
+```
+
+Backups default to `backup/`; use `--output-dir` for another local directory.
+Each backup has a unique UTC filename and passes SQLite integrity and foreign-key
+checks. Recovery writes a new file and refuses to overwrite the live database.
+Database files and the personal defense cheatsheet are ignored by Git.
+
+See [backup operations and recovery runbook](backup/README.md) for scheduling,
+retention, off-device storage, and the offline recovery procedure. Scheduling and
+off-device copying are proposed operational steps, not automatically enabled.
+
 ## Automated tests
+
+The testing lead owns the backup test suite and formal verification report.
+See the backup runbook for the recovery drill and suggested acceptance scenarios.
 
 | ID | What is checked | Source |
 |----|-----------------|--------|
