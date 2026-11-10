@@ -1,4 +1,6 @@
-from django.db import models
+from django.db import models, router, transaction
+from django.db.models import F
+from django.core.exceptions import ValidationError
 from django.contrib.auth.models import AbstractUser
 from django.core.validators import MinValueValidator, RegexValidator
 from decimal import Decimal
@@ -57,6 +59,38 @@ class StockReceipt(models.Model):
     received_at = models.DateTimeField(auto_now_add=True)
     received_by = models.ForeignKey(User, on_delete=models.RESTRICT)
     total_amount = models.DecimalField(max_digits=12, decimal_places=2, default=Decimal('0.00'))
+
+    posted = models.BooleanField(default=False, editable=False)
+
+    def post(self):
+        """Apply all receipt lines exactly once, together with the posting marker."""
+        if self.pk is None:
+            raise ValidationError('Save the receipt before posting it.')
+        using = self._state.db or router.db_for_write(type(self), instance=self)
+        with transaction.atomic(using=using):
+            # A conditional write serializes competing attempts, including on SQLite.
+            claimed = type(self).objects.using(using).filter(
+                pk=self.pk, posted=False,
+            ).update(posted=True)
+            if not claimed:
+                self.refresh_from_db(using=using)
+                return False
+            items = list(self.items.using(using).order_by('product_id', 'pk'))
+            if not items:
+                raise ValidationError('A receipt must contain at least one item.')
+            total = Decimal('0.00')
+            for item in items:
+                item.full_clean()
+                total += item.quantity * item.purchase_price
+                Product.objects.using(using).filter(pk=item.product_id).update(
+                    quantity=F('quantity') + item.quantity,
+                )
+            total = total.quantize(Decimal('0.01'))
+            self._meta.get_field('total_amount').clean(total, self)
+            type(self).objects.using(using).filter(pk=self.pk).update(total_amount=total)
+        self.posted = True
+        self.total_amount = total
+        return True
 
 class StockReceiptItem(models.Model):
     stock_receipt = models.ForeignKey(StockReceipt, related_name='items', on_delete=models.CASCADE)

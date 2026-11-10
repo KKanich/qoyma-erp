@@ -104,3 +104,33 @@ See the backup runbook for the recovery drill and covered acceptance scenarios.
 | AC-02 | Selling more than in stock is refused, whole sale rolled back | Atomic transaction |
 | AC-03 | Cashier gets 403 on alerts; Manager sees low-stock alert | RBAC |
 | AC-04 | Anonymous user is redirected to login | Security |
+
+## Stock receipt demo
+
+Open `/admin/store/stockreceipt/add/`, select a supplier and receiving user,
+then enter products, positive quantities and purchase prices. Click **Save**.
+The admin saves the header and all lines and calls `StockReceipt.post()` inside
+one database transaction. Stock increments use database `F()` expressions;
+the calculated total and `posted` marker commit with the stock updates.
+An error rolls back the entire receipt. Repeating `post()` does not add stock again.
+Posted receipts are read-only in the admin and cannot be deleted there.
+
+For scripts/imports, create the header and lines inside `transaction.atomic()`,
+then call `receipt.post()` before leaving the transaction. A plain header `save()`
+does not post anything because its inline items do not exist yet. Bulk ORM writes
+and direct SQL bypass the admin workflow and must not edit posted documents.
+The merge migration joins both receipt migration histories. It marks existing
+receipts as posted without changing stock, preventing previously applied API
+receipts from being applied twice. Historical receipts have no reliable posting
+marker: reconcile any older, unprocessed admin receipts manually instead of
+reposting them. New API/form receipts also set the marker in their stock-update
+transaction. Back up the database before running `python manage.py migrate`.
+
+Demo verified on 2026-11-10: receipt #1, Milk 2.5% 1L, 5 units at 400.00;
+stock changed from 18.00 to 23.00, receipt total 2000.00.
+
+Receipt tests cover admin saving, fractional quantities, totals, repeat posting,
+read-only posted documents, invalid/empty receipts, cumulative receipts and rollback
+after a stock update. Both API/form and admin receipt suites are preserved.
+Run `python manage.py test store`; the separate browser suite is documented in
+the QA guide.

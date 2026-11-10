@@ -67,6 +67,9 @@ def receive_stock(user, supplier, items):
             total += qty * price
 
         receipt.total_amount = total
+        # This workflow has already applied every line inside the transaction.
+        # Protect it from being applied again by the admin/script post() method.
+        receipt.posted = True
         receipt.save()
 
     return receipt
