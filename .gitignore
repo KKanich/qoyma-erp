@@ -20,6 +20,9 @@ env/
 /staticfiles/
 *.log
 
+# Local backup files
+/backup/.snapshot-*
+
 # Test and tool caches
 .pytest_cache/
 .mypy_cache/
