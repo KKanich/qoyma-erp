@@ -84,7 +84,9 @@ off-device copying are proposed operational steps, not automatically enabled.
 ## Automated tests
 
 The testing lead owns the backup test suite and formal verification report.
-See the backup runbook for the recovery drill and suggested acceptance scenarios.
+The seven automated backup tests are in `store/test_backup.py`; run them with
+`python manage.py test store.test_backup -v 2`. They use temporary databases.
+See the backup runbook for the recovery drill and covered acceptance scenarios.
 
 | ID | What is checked | Source |
 |----|-----------------|--------|

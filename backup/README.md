@@ -113,11 +113,13 @@ before claiming the target is met.
 
 ```bash
 python manage.py test store -v 2
+python manage.py test store.test_backup -v 2
 ```
 
-The command above runs the tests currently included in the repository. The
-testing lead will review and add the backup tests separately, then record the
-formal results. Suggested acceptance scenarios: recovery after deletion, unique
-snapshots, committed WAL data versus uncommitted writes, overwrite refusal,
-live-path protection, missing/corrupt/empty inputs, foreign-key checks and timeout
-cleanup. Use temporary databases for destructive scenarios.
+The first command runs the full suite; the second runs the seven backup tests
+in `store/test_backup.py`. They cover recovery after deletion, unique snapshots,
+committed WAL data versus uncommitted writes, overwrite refusal, live-path
+protection, missing/corrupt/empty inputs, foreign-key checks and timeout cleanup.
+Destructive scenarios use temporary databases, leaving the live database alone.
+The testing lead should independently review these tests, perform the recovery
+drill, and record the formal results.
