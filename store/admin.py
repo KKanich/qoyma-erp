@@ -83,3 +83,4 @@ class StockReceiptAdmin(admin.ModelAdmin):
 admin.site.register(Category)
 admin.site.register(Supplier)
 admin.site.site_header = 'Qoyma ERP — Bereke Grocery Store'
+admin.site.index_template = 'store/admin_index.html'
