@@ -12,4 +12,6 @@ urlpatterns = [
     path('api/stock-receipt/', views.stock_receipt_api, name='stock_receipt'),
     path('receive/', views.receive_page, name='receive_page'),
     path('report/', views.report_page, name='report_page'),
+    path('report/csv/', views.report_csv, name='report_csv'),
+
 ]

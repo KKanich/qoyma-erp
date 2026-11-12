@@ -1,3 +1,4 @@
+import csv
 import json
 from decimal import Decimal, InvalidOperation
 from datetime import date, timedelta
@@ -5,7 +6,7 @@ from datetime import date, timedelta
 from django.core.exceptions import ValidationError
 from django.db import transaction
 from django.db.models import F
-from django.http import JsonResponse
+from django.http import HttpResponse, JsonResponse
 from django.shortcuts import render
 from django.views.decorators.csrf import ensure_csrf_cookie
 from django.utils import timezone
@@ -180,3 +181,31 @@ def report_page(request):
     """Daily sales report dashboard for the manager (AC-D1..AC-D8, AC-D11)."""
     summary = daily_sales_summary()
     return render(request, 'store/report.html', {'s': summary})
+
+
+
+@role_required('Manager', 'Admin')
+def report_csv(request):
+    """Download today's sales as a CSV file (AC-D9, AC-D10)."""
+    day = timezone.localdate()
+    response = HttpResponse(content_type='text/csv; charset=utf-8')
+    response['Content-Disposition'] = f'attachment; filename="sales_{day}.csv"'
+    response.write('\ufeff')  # so Excel shows Kazakh/Russian letters correctly
+    writer = csv.writer(response)
+    writer.writerow(['sale_id', 'time', 'cashier', 'product', 'qty',
+                     'unit_price', 'subtotal', 'payment'])
+    items = (SaleItem.objects.filter(sale__created_at__date=day)
+             .select_related('sale', 'sale__cashier', 'product')
+             .order_by('sale__created_at', 'id'))
+    for item in items:
+        writer.writerow([
+            item.sale.id,
+            timezone.localtime(item.sale.created_at).strftime('%H:%M'),
+            item.sale.cashier.username,
+            item.product.name,
+            item.quantity,
+            item.unit_price,
+            item.subtotal,
+            item.sale.payment_method,
+        ])
+    return response
