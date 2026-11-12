@@ -134,3 +134,30 @@ read-only posted documents, invalid/empty receipts, cumulative receipts and roll
 after a stock update. Both API/form and admin receipt suites are preserved.
 Run `python manage.py test store`; the separate browser suite is documented in
 the QA guide.
+
+
+## Daily Sales Report
+
+Owner: Aizada Amanova (Systems Analysis & Requirements Lead)
+
+The manager sees how the store performed today and can download the sales as CSV.
+
+| URL | What it shows | Who can open |
+|-----|---------------|--------------|
+| `/report/` | Total sales, receipts, average receipt, split by payment method, top 5 products, low stock | Manager, Admin |
+| `/report/csv/` | Today's sales as `sales_YYYY-MM-DD.csv` (one row per sold item) | Manager, Admin |
+| Admin panel → **Reports** | Links to the report and CSV | Admin, staff |
+
+Cashier gets **403 Forbidden** on both pages.
+
+**Acceptance criteria:** `docs/daily_sales_report_criteria.md` (AC-D1…AC-D12)
+
+**Code:**
+- `store/reports.py` — `daily_sales_summary()` calculations
+- `store/views.py` — `report_page`, `report_csv`
+- `store/templates/store/report.html`, `store/templates/store/admin_index.html`
+
+**Tests:**
+```bash
+python manage.py test store.test_daily_report store.test_report_page store.test_report_csv store.test_admin_report_link -v 2
+```
