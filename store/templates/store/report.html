@@ -19,7 +19,7 @@
   <div><b>Daily sales report</b> <span>{{ s.day|date:"d.m.Y" }} · Bereke Grocery Store</span></div>
   <div>
     <span>{{ request.user.username }} ({{ request.user.role }})</span>
-    <a href="/">POS</a><a href="/receive/">Receive stock</a><a href="/admin/">Admin panel</a>
+    <a href="/report/csv/">Download CSV</a><a href="/">POS</a><a href="/receive/">Receive stock</a><a href="/admin/">Admin panel</a>
   </div>
 </header>
 <main>
