@@ -67,6 +67,12 @@ class StockReceiptAdmin(admin.ModelAdmin):
     readonly_fields = ('total_amount', 'posted')
     inlines = [StockReceiptItemInline]
 
+    def render_change_form(self, request, context, add=False, change=False, form_url='', obj=None):
+        context['receipt_scan_products'] = list(
+            Product.objects.values('id', 'barcode', 'name')
+        ) if obj is None or not obj.posted else []
+        return super().render_change_form(request, context, add, change, form_url, obj)
+
     def save_related(self, request, form, formsets, change):
         # Django wraps the entire admin change form (header + inlines) in atomic().
         super().save_related(request, form, formsets, change)
