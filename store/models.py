@@ -68,7 +68,6 @@ class StockReceipt(models.Model):
             raise ValidationError('Save the receipt before posting it.')
         using = self._state.db or router.db_for_write(type(self), instance=self)
         with transaction.atomic(using=using):
-            # A conditional write serializes competing attempts, including on SQLite.
             claimed = type(self).objects.using(using).filter(
                 pk=self.pk, posted=False,
             ).update(posted=True)

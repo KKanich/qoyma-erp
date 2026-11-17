@@ -114,7 +114,7 @@
 
   function removeItem(i) { cart.splice(i, 1); render(); }
 
-  document.getElementById('barcode').addEventListener('keydown', e => { if (e.key === 'Enter') addItem(); });
+  document.getElementById('barcode').addEventListener('keydown', e => { if (e.key === 'Enter') addItem(); }); //add by enter
 
   async function checkout() {
     if (!cart.length) { show('Cart is empty', false); return; }
