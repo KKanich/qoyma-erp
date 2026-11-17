@@ -1,0 +1,19 @@
+{% extends "admin/change_form.html" %}
+{% load static %}
+{% block field_sets %}
+{% if not original.posted and not is_popup and has_change_permission or add %}
+<fieldset class="module aligned">
+  <h2>Приёмка по штрихкоду</h2>
+  <div class="form-row">
+    <label for="receipt-barcode">Штрихкод:</label>
+    <input id="receipt-barcode" type="text" inputmode="numeric" autocomplete="off" maxlength="13" placeholder="Сканируйте и нажмите Enter">
+    <button type="button" id="receipt-scan">Добавить товар</button>
+    <p class="help">Повторное сканирование добавляет 1 к количеству. Укажите закупочную цену в строке товара. Остаток изменится только после Save.</p>
+    <p id="receipt-scan-status" role="status" aria-live="polite"></p>
+  </div>
+</fieldset>
+{{ receipt_scan_products|json_script:"receipt-scan-products" }}
+<script src="{% static 'store/js/receipt_scan.js' %}" defer></script>
+{% endif %}
+{{ block.super }}
+{% endblock %}

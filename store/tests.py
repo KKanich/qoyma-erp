@@ -201,3 +201,23 @@ class StockReceiptAcceptanceTest(TestCase):
         self.product.refresh_from_db()
         self.assertEqual(self.product.quantity, Decimal('31.00'))
         self.assertEqual(StockReceipt.objects.filter(posted=True).count(), 2)
+
+
+    def test_scanner_catalog_is_available_on_add_form(self):
+        response = self.client.get(reverse('admin:store_stockreceipt_add'))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'id="receipt-barcode"')
+        self.assertContains(response, 'store/js/receipt_scan.js')
+        self.assertEqual(response.context['receipt_scan_products'], [{
+            'id': self.product.pk, 'barcode': self.product.barcode,
+            'name': self.product.name,
+        }])
+
+    def test_scanner_is_hidden_on_posted_receipt(self):
+        from .models import StockReceipt
+        self.client.post(reverse('admin:store_stockreceipt_add'), self.payload())
+        receipt = StockReceipt.objects.get()
+        response = self.client.get(reverse('admin:store_stockreceipt_change', args=[receipt.pk]))
+        self.assertEqual(response.status_code, 200)
+        self.assertNotContains(response, 'id="receipt-barcode"')
+        self.assertEqual(response.context['receipt_scan_products'], [])

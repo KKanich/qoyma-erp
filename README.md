@@ -65,4 +65,15 @@ stock changed from 18.00 to 23.00, receipt total 2000.00.
 
 Receipt tests cover admin saving, fractional quantities, totals, repeat posting,
 read-only posted documents, invalid/empty receipts, cumulative receipts and rollback
-after a stock update. Run `python manage.py test store` (14 tests).
+after a stock update. Run `python manage.py test store` (16 tests).
+
+### Barcode scanner for receipts
+
+The admin receipt form includes a barcode field. Use a keyboard-mode USB/Bluetooth
+scanner configured to send Enter after an EAN-13 barcode, or type a barcode and
+press Enter. A known product is added with quantity 1; scanning it again adds 1.
+Additional rows are created automatically. Enter purchase prices manually, then
+click Save to post the complete receipt atomically. Scanning never updates stock.
+Unknown codes and invalid input show a message without adding a line. The product
+catalog is loaded when the form opens; newly created products become scannable
+on a newly opened receipt form. The scanner field is hidden on posted receipts.
