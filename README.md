@@ -8,6 +8,13 @@ Qoyma is a lightweight, offline-capable ERP system designed for small grocery st
 - **Security**: Role-Based Access Control (), PBKDF2 password hashing
 - **Transactions**: Atomic updates () for inventory safety
 
+## Product catalog (ORM)
+
+Managers and Admins can open `/products/` from the POS **Products** link to search,
+create, edit and safely delete products through Django ORM views. Stock stays
+under receipt/sales control. See [the ORM demo guide](docs/orm_catalog.md) for
+presentation steps, implementation details and tests.
+
 ## Team Roles
 1. Systems Analysis & Requirements Lead: Aizada (24B031644)
 2. Data & Database Lead: Kanat (24B032134)

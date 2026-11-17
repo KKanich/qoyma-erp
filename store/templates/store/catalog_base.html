@@ -1,0 +1,27 @@
+{% load static %}
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Qoyma — Products</title>
+  <link rel="stylesheet" href="{% static 'store/css/pos.css' %}">
+  <style>
+    main {display:block; max-width:1200px; margin:auto}
+    a {color:#7fc8ff} h1 {margin-top:0} .muted {color:#a9bbd2}
+    .notice {padding:14px; border:1px solid #7fc8ff; border-radius:8px; margin-bottom:16px}
+    .errorlist {color:#ffb3bd} .field {margin-bottom:18px}
+    .field label {display:block; margin-bottom:6px}
+    .field input,.field select {width:100%; box-sizing:border-box}
+    .editor {max-width:620px} .scroll {overflow-x:auto} .actions {white-space:nowrap}
+    .toolbar {display:flex; justify-content:space-between; gap:16px; flex-wrap:wrap}
+  </style>
+</head>
+<body>
+<header><b>Qoyma — Product catalog</b><nav><a href="{% url 'pos_page' %}">POS</a><a href="{% url 'product_list' %}">Products</a><a href="{% url 'receive_page' %}">Receive stock</a></nav></header>
+<main>
+  {% for message in messages %}<div class="notice" role="status">{{ message }}</div>{% endfor %}
+  {% block content %}{% endblock %}
+</main>
+</body>
+</html>

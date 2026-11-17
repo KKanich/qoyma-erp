@@ -1,0 +1,12 @@
+{% extends 'store/catalog_base.html' %}
+{% block content %}
+<section class="editor">
+  <h1>{% if product.pk %}Edit {{ product.name }}{% else %}New product{% endif %}</h1>
+  <p class="muted">New products start with zero stock. Use Receive stock to record deliveries. Categories and suppliers are maintained in the admin panel.</p>
+  <form method="post">{% csrf_token %}
+    {{ form.non_field_errors }}
+    {% for field in form %}<div class="field">{{ field.label_tag }}{{ field }}{{ field.errors }}</div>{% endfor %}
+    <button type="submit" class="primary">Save product</button> <a href="{% url 'product_list' %}">Cancel</a>
+  </form>
+</section>
+{% endblock %}
