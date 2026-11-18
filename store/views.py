@@ -14,8 +14,8 @@ from django.utils import timezone
 from .decorators import role_required
 from .models import Product, Sale, SaleItem, Supplier
 from .services import receive_stock
-from .reports import daily_sales_summary
-
+from .reports import daily_sales_summary, sales_rows
+from .excel_export import build_sales_workbook
 
 
 class CheckoutError(Exception):
@@ -208,4 +208,15 @@ def report_csv(request):
             item.subtotal,
             item.sale.payment_method,
         ])
+    return response
+
+@role_required('Manager', 'Admin')
+def report_xlsx(request):
+    """Download today's report as a formatted Excel file (fixes UAT defect D-01)."""
+    summary = daily_sales_summary()
+    workbook = build_sales_workbook(summary, sales_rows(summary['day']), dict(Sale.PAYMENT_CHOICES))
+    response = HttpResponse(
+        content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+    response['Content-Disposition'] = f'attachment; filename="sales_{summary["day"]}.xlsx"'
+    workbook.save(response)
     return response

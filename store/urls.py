@@ -17,5 +17,5 @@ urlpatterns = [
     path('receive/', views.receive_page, name='receive_page'),
     path('report/', views.report_page, name='report_page'),
     path('report/csv/', views.report_csv, name='report_csv'),
-
+    path('report/xlsx/', views.report_xlsx, name='report_xlsx'),
 ]

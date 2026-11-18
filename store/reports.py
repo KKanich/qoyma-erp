@@ -55,3 +55,22 @@ def daily_sales_summary(day=None):
         'top_products': top_products,
         'low_stock': low_stock,
     }
+
+
+
+def sales_rows(day=None):
+    """Every item sold on this day, ready for CSV / Excel export."""
+    day = day or timezone.localdate()
+    items = (SaleItem.objects.filter(sale__created_at__date=day)
+             .select_related('sale', 'sale__cashier', 'product')
+             .order_by('sale__created_at', 'id'))
+    return [{
+        'sale_id': item.sale.id,
+        'time': timezone.localtime(item.sale.created_at).strftime('%H:%M'),
+        'cashier': item.sale.cashier.username,
+        'product': item.product.name,
+        'qty': item.quantity,
+        'unit_price': item.unit_price,
+        'subtotal': item.subtotal,
+        'payment': item.sale.payment_method,
+    } for item in items]
