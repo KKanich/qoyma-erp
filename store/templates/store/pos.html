@@ -9,7 +9,10 @@
 </head>
 <body>
 <header>
-  <div><b>Qoyma POS</b> <span>Bereke Grocery Store</span></div>
+  <div>
+    <b>Qoyma POS</b> <span>Bereke Grocery Store</span>
+    <div style="font-size: 14px; color: #8fa3bf; margin-top: 4px;">{% now "l, d.m.Y" %}</div>
+  </div>
   <div>
     <span>{{ request.user.username }} ({{ request.user.role }})</span>
     {% if request.user.role != 'Cashier' %}<a href="/products/">Products</a><a href="/receive/">Receive stock</a><a href="/report/">Daily report</a><a href="/api/alerts/">Alerts</a><a href="/admin/">Admin panel</a>{% endif %}
