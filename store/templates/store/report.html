@@ -19,16 +19,16 @@
   <div><b>Daily sales report</b> <span>{{ s.day|date:"d.m.Y" }} · Bereke Grocery Store</span></div>
   <div>
     <span>{{ request.user.username }} ({{ request.user.role }})</span>
-    <a href="/report/csv/">Download CSV</a><a href="/">POS</a><a href="/receive/">Receive stock</a><a href="/admin/">Admin panel</a>
+    <a href="/report/xlsx/">Download Excel</a><a href="/report/csv/">Download CSV</a>a href="/">POS</a><a href="/receive/">Receive stock</a><a href="/admin/">Admin panel</a>
   </div>
 </header>
 <main>
   <section>
     <h2>Today</h2>
     <div class="cards">
-      <div class="card"><div class="label">Total sales</div><div class="value">{{ s.total }} ₸</div></div>
+      <div class="card"><div class="label">Total sales</div><div class="value">{{ s.total|floatformat:2 }}₸</div></div>
       <div class="card"><div class="label">Receipts</div><div class="value">{{ s.receipts }}</div></div>
-      <div class="card"><div class="label">Average receipt</div><div class="value">{{ s.average }} ₸</div></div>
+      <div class="card"><div class="label">Average receipt</div><div class="value">{{ s.average|floatformat:2 }}₸</div></div>
     </div>
 
     <h2>By payment method</h2>
@@ -36,7 +36,7 @@
       <thead><tr><th>Method</th><th>Amount, ₸</th></tr></thead>
       <tbody>
       {% for method, amount in s.by_payment.items %}
-        <tr><td>{{ method }}</td><td>{{ amount }}</td></tr>
+        <tr><td>{{ method }}</td><td>{{ amount|floatformat:2 }}</td></tr>
       {% endfor %}
       </tbody>
     </table>
@@ -48,7 +48,7 @@
       <thead><tr><th>Product</th><th>Qty</th><th>Amount, ₸</th></tr></thead>
       <tbody>
       {% for p in s.top_products %}
-        <tr><td>{{ p.product__name }}</td><td>{{ p.qty }}</td><td>{{ p.amount }}</td></tr>
+        <tr><td>{{ p.product__name }}</td><td>{{ p.qty }}</td>{{ p.amount|floatformat:2 }}</tr>
       {% empty %}
         <tr><td colspan="3" class="muted">No sales today</td></tr>
       {% endfor %}
