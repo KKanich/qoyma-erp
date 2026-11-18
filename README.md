@@ -179,3 +179,10 @@ Cashier gets **403 Forbidden** on both pages.
 ```bash
 python manage.py test store.test_daily_report store.test_report_page store.test_report_csv store.test_admin_report_link -v 2
 ```
+
+
+## Documentation
+
+- [User guide](docs/user_guide.md) — how cashier and manager use the system
+- [UAT scenario and results](docs/uat_scenario.md) — 17-step acceptance test
+- [UAT defects](docs/uat_defects.md) — defects found and their status
