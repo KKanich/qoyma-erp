@@ -4,18 +4,18 @@
 Owner: Aizada Amanova (Systems Analysis & Requirements Lead)
 Fixes UAT defect D-01: the CSV opened in one column in Excel.
 The workbook has 3 sheets with styled tables and charts:
-  Summary      — key numbers, payment methods (+ chart), low stock
+  Summary      — key numbers, payment methods (+ bar chart), low stock
   Sales        — every sold item, filter, totals row
   Top products — top 5 products (+ chart)
 """
 from openpyxl import Workbook
-from openpyxl.chart import BarChart, PieChart, Reference
+from openpyxl.chart import BarChart, Reference
 from openpyxl.chart.label import DataLabelList
 from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
 from openpyxl.utils import get_column_letter
 
 MONEY = '#,##0.00 "₸"'
-QTY = '#,##0.##'
+QTY = 'General'  # 2 stays 2 (no trailing comma in Russian Excel)
 DARK = '1F3B57'
 LIGHT = 'EAF1F8'
 ACCENT = '2FBF71'
@@ -93,18 +93,23 @@ def build_sales_workbook(summary, items, payment_labels, store_name='Bereke Groc
     cell.number_format = MONEY
 
     if total:
-        pie = PieChart()
-        pie.title = 'Sales by payment method'
-        pie.add_data(Reference(ws, min_col=2, min_row=8, max_row=last), titles_from_data=True)
-        pie.set_categories(Reference(ws, min_col=1, min_row=9, max_row=last))
-        pie.dataLabels = DataLabelList()
-        pie.dataLabels.showPercent = True
-        pie.dataLabels.showVal = False
-        pie.dataLabels.showCatName = False
-        pie.dataLabels.showSerName = False
-        pie.dataLabels.showLegendKey = False
-        pie.height, pie.width = 7.5, 11
-        ws.add_chart(pie, 'E7')
+        chart = BarChart()
+        chart.type = 'col'
+        chart.title = 'Sales by payment method, ₸'
+        chart.legend = None
+        chart.add_data(Reference(ws, min_col=2, min_row=8, max_row=last), titles_from_data=True)
+        chart.set_categories(Reference(ws, min_col=1, min_row=9, max_row=last))
+        chart.series[0].graphicalProperties.solidFill = DARK
+        chart.dataLabels = DataLabelList()
+        chart.dataLabels.showVal = True
+        chart.dataLabels.showCatName = False
+        chart.dataLabels.showSerName = False
+        chart.dataLabels.showLegendKey = False
+        chart.x_axis.delete = False
+        chart.y_axis.delete = False
+        chart.y_axis.numFmt = '#,##0'
+        chart.height, chart.width = 7.5, 11
+        ws.add_chart(chart, 'E7')
 
     low_top = total_row + 3
     ws.cell(row=low_top - 1, column=1, value='Low stock (at or below minimum)').font = Font(bold=True, size=12, color=DARK)
