@@ -26,7 +26,7 @@ Run date: 17 November 2026 · Tester: Aizada Amanova
 | 10 | Manager | Receive stock: qty -5 | Error, stock unchanged | Pass |
 | 11 | Manager | Receive stock: expiry date = yesterday | Error "already expired", stock unchanged | Pass |
 | 12 | Manager | Open Daily report | Total 1 100 ₸, 1 receipt, Cash 1 100 ₸, Milk in top products | Pass (see D-02) |
-| 13 | Manager | Click Download CSV | File opens in Excel with data in separate columns | **Fail** — all data in column A (D-01) |
+| 13 | Manager | Click Download CSV | File opens in Excel with data in separate columns | Pass after fix (Download Excel, D-01 fixed); |
 | 14 | Manager | Admin → Products → Add, price -10 | Red error, product not saved | Pass |
 | 15 | Admin | Log in as admin / QoymaAdmin2026, open /admin/ | Reports block with Daily sales report link | Pass (see D-03) |
 | 16 | Manager | Open /products/ | Product list opens with 33 products | Pass |
@@ -36,7 +36,7 @@ Run date: 17 November 2026 · Tester: Aizada Amanova
 
 | Total steps | Pass | Fail |
 |-------------|------|------|
-| 17 | 16 | 1 |
+|     17      |  17  |   0  |
 
 The main process (sale → stock receipt → report) works from start to finish.
 Defects found: see `docs/uat_defects.md`.
