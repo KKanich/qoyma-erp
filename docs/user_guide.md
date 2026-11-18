@@ -8,11 +8,11 @@ Open the system and enter your username and password.
 
 ![Login](img/login.png)
 
-| Role | What you can do |
-|------|-----------------|
-| Cashier | Sell products |
+| Role    | What you can do                                             |
+|---------|-------------------------------------------------------------|
+| Cashier | Sell products                                               |
 | Manager | Sell, receive goods, manage products, view the daily report |
-| Admin | Everything, including the Admin panel |
+| Admin   | Everything, including the Admin panel                       |
 
 ## 2. Cashier: sell products
 
@@ -28,10 +28,10 @@ If something is wrong, the system shows a red message and **nothing is saved**:
 
 ![Error](img/pos_error.png)
 
-| Message | What to do |
-|---------|-----------|
+| Message            | What to do                                  |
+|--------------------|---------------------------------------------|
 | Insufficient stock | Sell a smaller quantity or tell the manager |
-| Product not found | Check the barcode or tell the manager |
+| Product not found  | Check the barcode or tell the manager       |
 
 ## 3. Manager: receive goods from a supplier
 
@@ -87,8 +87,8 @@ Press **Log out** at the top right when you finish your shift.
 
 ## Demo accounts
 
-| Role | Login | Password |
-|------|-------|----------|
+| Role    | Login   | Password         |
+|---------|---------|------------------|
 | Cashier | cashier | QoymaCashier2026 |
 | Manager | manager | QoymaManager2026 |
-| Admin | admin | QoymaAdmin2026 |
+| Admin   | admin   | QoymaAdmin2026   |
