@@ -1,13 +1,16 @@
 """Real Chromium journeys against Django's isolated live test server."""
 from datetime import timedelta
 from decimal import Decimal
+from io import BytesIO
 import os
+from pathlib import Path
 
 from django.contrib.staticfiles.testing import StaticLiveServerTestCase
 from django.utils import timezone
+from openpyxl import load_workbook
 from playwright.sync_api import expect, sync_playwright
 
-from store.models import Sale, SaleItem, StockReceipt, Supplier, User
+from store.models import Sale, SaleItem, StockMovement, StockReceipt, Supplier, User
 from store.tests import make_product
 
 
@@ -115,3 +118,79 @@ class BrowserJourneys(StaticLiveServerTestCase):
         expect(self.page.get_by_role('link', name='Receive stock', exact=True)).to_have_count(0)
         response = self.page.goto(self.live_server_url + '/receive/')
         self.assertEqual(response.status, 403)
+
+    def test_nov18_pos_date_and_report_excel_download(self):
+        self.login('browser-manager')
+        expected_date = timezone.localtime(timezone.now()).strftime('%A, %d.%m.%Y')
+        expect(self.page.locator('header')).to_contain_text(expected_date)
+        self.add_item(2)
+        self.page.get_by_role('button', name='Complete sale').click()
+        expect(self.page.locator('#msg')).to_contain_text('completed')
+        stock_row = self.page.locator('tr').filter(has_text=self.product.barcode)
+        expect(stock_row).to_contain_text('18.00')
+        self.page.get_by_role('link', name='Daily report', exact=True).click()
+        expect(self.page).to_have_title('Qoyma — Daily sales report')
+        expect(self.page.locator('.cards')).to_contain_text('1100.00 ₸')
+        top_row = self.page.get_by_role('row').filter(has_text='Milk 2.5% 1L')
+        expect(top_row.get_by_role('cell').nth(1)).to_have_text('2')
+        expect(top_row.get_by_role('cell').nth(2)).to_have_text('1100.00')
+        with self.page.expect_download() as download:
+            self.page.get_by_role('link', name='Download Excel', exact=True).click()
+        self.assertTrue(download.value.suggested_filename.startswith('sales_'))
+        self.assertTrue(download.value.suggested_filename.endswith('.xlsx'))
+        wb = load_workbook(BytesIO(Path(download.value.path()).read_bytes()))
+        self.assertEqual(wb.sheetnames, ['Summary', 'Sales', 'Top products'])
+        self.assertEqual(wb['Summary']['A5'].value, 1100.0)
+        self.assertEqual(wb['Sales']['D2'].value, 'Milk 2.5% 1L')
+        self.assertEqual(wb['Sales']['E2'].value, 2)
+        self.assertEqual(wb['Sales']['G2'].value, 1100.0)
+
+    def test_nov24_stale_adjustment_blocked_after_cashier_sale_and_audit_trail(self):
+        self.login('browser-manager')
+        self.page.get_by_role('link', name='Products', exact=True).click()
+        self.page.get_by_role('link', name='Adjust stock').click()
+        expect(self.page).to_have_title('Qoyma — Adjust stock')
+        expect(self.page.locator('main')).to_contain_text('20.00')
+
+        cashier_context = self.browser.new_context()
+        self.addCleanup(cashier_context.close)
+        cashier_page = cashier_context.new_page()
+        cashier_page.set_default_timeout(10000)
+        cashier_page.goto(self.live_server_url + '/login/')
+        cashier_page.get_by_label('Username').fill('browser-cashier')
+        cashier_page.get_by_label('Password').fill(self.password)
+        cashier_page.get_by_role('button', name='Log in', exact=True).click()
+        expect(cashier_page).to_have_title('Qoyma — POS')
+        cashier_page.locator('#barcode').fill(self.product.barcode)
+        cashier_page.locator('#qty').fill('2')
+        cashier_page.get_by_role('button', name='Add', exact=True).click()
+        cashier_page.get_by_role('button', name='Complete sale').click()
+        expect(cashier_page.locator('#msg')).to_contain_text('completed')
+        cashier_context.close()
+
+        self.page.get_by_label('Counted stock').fill('19')
+        self.page.get_by_label('Reason for the difference').fill('Stale count attempt')
+        self.page.get_by_role('button', name='Post adjustment').click()
+        expect(self.page.locator('main')).to_contain_text('Stock changed since this count was opened.')
+        self.page.get_by_role('link', name='Open a fresh count').click()
+        expect(self.page.locator('main')).to_contain_text('18.00')
+
+        self.page.get_by_label('Counted stock').fill('17')
+        self.page.get_by_label('Reason for the difference').fill('Damaged carton written off')
+        self.page.get_by_role('button', name='Post adjustment').click()
+        expect(self.page).to_have_title('Qoyma — Inventory audit')
+
+        adj_row = self.page.get_by_role('row').filter(has_text='Damaged carton written off')
+        expect(adj_row).to_contain_text('browser-manager')
+        expect(adj_row.get_by_role('cell').nth(4)).to_have_text('18.00')
+        expect(adj_row.get_by_role('cell').nth(6)).to_have_text('17.00')
+
+        sale_row = self.page.get_by_role('row').filter(has_text='Sale #')
+        expect(sale_row).to_contain_text('browser-cashier')
+        expect(sale_row.get_by_role('cell').nth(4)).to_have_text('20.00')
+        expect(sale_row.get_by_role('cell').nth(6)).to_have_text('18.00')
+
+        self.stop_browser_for_db_assertions()
+        self.product.refresh_from_db()
+        self.assertEqual(self.product.quantity, Decimal('17.00'))
+        self.assertEqual(StockMovement.objects.count(), 2)
