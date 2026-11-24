@@ -25,6 +25,15 @@ class ProductAdmin(admin.ModelAdmin):
     search_fields = ('name', 'barcode')
     list_filter = ('category',)
 
+    def get_readonly_fields(self, request, obj=None):
+        return ('quantity',) if obj else ()
+
+    def save_model(self, request, obj, form, change):
+        if change:
+            obj.save(update_fields=form.changed_data)
+        else:
+            super().save_model(request, obj, form, change)
+
 
 class SaleItemInline(admin.TabularInline):
     model = SaleItem
@@ -76,7 +85,7 @@ class StockReceiptAdmin(admin.ModelAdmin):
     def save_related(self, request, form, formsets, change):
         
         super().save_related(request, form, formsets, change)
-        form.instance.post()
+        form.instance.post(actor=request.user)
 
     def has_change_permission(self, request, obj=None):
         return not (obj and obj.posted) and super().has_change_permission(request, obj)

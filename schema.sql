@@ -51,3 +51,46 @@ CREATE TABLE IF NOT EXISTS store_saleitem (
     FOREIGN KEY (sale_id) REFERENCES store_sale(id) ON DELETE CASCADE,
     FOREIGN KEY (product_id) REFERENCES store_product(id) ON DELETE RESTRICT
 );
+
+CREATE TABLE IF NOT EXISTS store_stockreceipt (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    supplier_id INTEGER NOT NULL REFERENCES store_supplier(id) ON DELETE RESTRICT,
+    received_by_id INTEGER NOT NULL REFERENCES store_user(id) ON DELETE RESTRICT,
+    received_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    total_amount DECIMAL(12, 2) NOT NULL DEFAULT 0,
+    posted BOOLEAN NOT NULL DEFAULT 0
+);
+
+CREATE TABLE IF NOT EXISTS store_stockreceiptitem (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    stock_receipt_id INTEGER NOT NULL REFERENCES store_stockreceipt(id) ON DELETE CASCADE,
+    product_id INTEGER NOT NULL REFERENCES store_product(id) ON DELETE RESTRICT,
+    quantity DECIMAL(10, 2) NOT NULL CHECK (quantity > 0),
+    purchase_price DECIMAL(10, 2) NOT NULL CHECK (purchase_price > 0),
+    expiry_date DATE
+);
+
+CREATE TABLE IF NOT EXISTS store_stockmovement (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    recorded_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    actor_id INTEGER NOT NULL REFERENCES store_user(id) ON DELETE RESTRICT,
+    product_id INTEGER NOT NULL REFERENCES store_product(id) ON DELETE RESTRICT,
+    username VARCHAR(150) NOT NULL,
+    barcode VARCHAR(13) NOT NULL,
+    product_name VARCHAR(200) NOT NULL,
+    before DECIMAL(10, 2) NOT NULL,
+    after DECIMAL(10, 2) NOT NULL,
+    sale_item_id INTEGER UNIQUE REFERENCES store_saleitem(id) ON DELETE RESTRICT,
+    receipt_item_id INTEGER UNIQUE REFERENCES store_stockreceiptitem(id) ON DELETE RESTRICT,
+    reason VARCHAR(200) NOT NULL DEFAULT '',
+    CONSTRAINT stock_movement_valid CHECK (
+        before >= 0 AND after >= 0 AND (
+            (sale_item_id IS NOT NULL AND receipt_item_id IS NULL AND after < before AND reason = '')
+            OR (receipt_item_id IS NOT NULL AND sale_item_id IS NULL AND after > before AND reason = '')
+            OR (sale_item_id IS NULL AND receipt_item_id IS NULL AND after <> before AND reason <> '')
+        )
+    )
+);
+
+CREATE INDEX IF NOT EXISTS stockmovement_product ON store_stockmovement(product_id);
+CREATE INDEX IF NOT EXISTS stockmovement_actor ON store_stockmovement(actor_id);

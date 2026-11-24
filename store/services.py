@@ -12,7 +12,7 @@ from django.core.exceptions import PermissionDenied, ValidationError
 from django.db import transaction
 from django.utils import timezone
 
-from .models import Product, StockReceipt, StockReceiptItem
+from .models import Product, StockMovement, StockReceipt, StockReceiptItem
 
 ALLOWED_ROLES = ('Manager', 'Admin')
 
@@ -57,13 +57,15 @@ def receive_stock(user, supplier, items):
             except Product.DoesNotExist:
                 raise ValidationError(f'Product with barcode {barcode} not found.')
 
-            StockReceiptItem.objects.create(
+            line = StockReceiptItem.objects.create(
                 stock_receipt=receipt, product=product,
                 quantity=qty, purchase_price=price, expiry_date=expiry,
             )
+            before = product.quantity
             product.quantity += qty                                      # AC-R1
             product.expiry_date = expiry
             product.save()
+            StockMovement.record(product, before, user, receipt_item=line)
             total += qty * price
 
         receipt.total_amount = total

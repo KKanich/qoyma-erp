@@ -13,6 +13,7 @@ from openpyxl.chart import BarChart, Reference
 from openpyxl.chart.label import DataLabelList
 from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
 from openpyxl.utils import get_column_letter
+from django.utils import timezone
 
 MONEY = '#,##0.00 "₸"'
 QTY = 'General'  # 2 stays 2 (no trailing comma in Russian Excel)
@@ -168,4 +169,36 @@ def build_sales_workbook(summary, items, payment_labels, store_name='Bereke Groc
         ws3.cell(row=2, column=1, value='No sales today')
     _widths(ws3, [30, 12, 15])
 
+    return wb
+
+
+def build_inventory_workbook(movements):
+    """Export the recorded balances and source of each inventory movement."""
+    wb = Workbook()
+    ws = wb.active
+    ws.title = 'Inventory audit'
+    ws.sheet_view.showGridLines = False
+    ws['A1'] = 'Inventory audit'
+    ws['A1'].font = Font(size=16, bold=True, color=DARK)
+    ws['A2'] = 'All recorded movements in posting order. Times are local to the store.'
+    headers = ['Entry', 'Recorded at', 'Product', 'Barcode', 'Type', 'Before', 'Change',
+               'After', 'User', 'Source or reason']
+    _table(ws, 4, 1, headers, [])
+    for row, move in enumerate(movements, start=5):
+        recorded = timezone.localtime(move.recorded_at).replace(tzinfo=None)
+        ws.append([move.pk, recorded, move.product_name, move.barcode, move.kind,
+                   move.before, move.change, move.after, move.username, move.reference])
+        ws.cell(row, 2).number_format = 'yyyy-mm-dd hh:mm:ss'
+        for col in (3, 4, 5, 9, 10):
+            # Preserve text verbatim, including leading zeros and leading equals signs.
+            ws.cell(row, col).data_type = 's'
+        for col in (6, 7, 8):
+            ws.cell(row, col).number_format = '#,##0.00'
+        ws.cell(row, 10).alignment = Alignment(wrap_text=True, vertical='center')
+        if row % 2 == 0:
+            for col in range(1, len(headers) + 1):
+                ws.cell(row, col).fill = ZEBRA_FILL
+    ws.freeze_panes = 'C5'
+    ws.auto_filter.ref = f'A4:J{ws.max_row}'
+    _widths(ws, [10, 23, 31, 18, 16, 16, 16, 16, 22, 52])
     return wb

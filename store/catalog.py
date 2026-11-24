@@ -67,7 +67,7 @@ def product_delete(request, pk):
                     with transaction.atomic():
                         product.delete()
                 except (RestrictedError, IntegrityError):
-                    messages.error(request, 'This product has sales or receipt history and cannot be deleted.')
+                    messages.error(request, 'This product has sales or receipt history, or a recorded stock adjustment, and cannot be deleted.')
                 else:
                     messages.success(request, 'Product deleted.')
             return redirect('product_list')

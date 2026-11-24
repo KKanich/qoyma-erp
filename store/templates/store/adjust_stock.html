@@ -1,0 +1,18 @@
+{% extends 'store/catalog_base.html' %}
+{% block title %}Adjust stock{% endblock %}
+{% block content %}
+<section class="editor">
+  <h1>Adjust stock</h1>
+  <p>{{ product.name }} · {{ product.barcode }}</p>
+  <p>Recorded stock when count opened <strong>{{ form.expected.value }}</strong></p>
+  <form method="post">{% csrf_token %}
+    {{ form.non_field_errors }}
+    {% if form.non_field_errors %}<p><a href="{% url 'adjust_stock' product.pk %}">Open a fresh count</a></p>{% endif %}
+    {% for field in form.hidden_fields %}{{ field }}{{ field.errors }}{% endfor %}
+    {% for field in form.visible_fields %}
+      <div class="field">{{ field.label_tag }}{{ field }}{{ field.errors }}</div>
+    {% endfor %}
+    <button type="submit">Post adjustment</button> <a href="{% url 'product_list' %}">Cancel</a>
+  </form>
+</section>
+{% endblock %}

@@ -3,7 +3,7 @@
 <section class="editor">
   <h1>Delete {{ product.name }}?</h1>
   <p>Barcode: {{ product.barcode }} · Stock: {{ product.quantity }}</p>
-  <p>Only a product with zero stock and no sales or receipt history can be deleted. This action permanently removes its catalog record.</p>
+  <p>Deletion requires zero stock and an empty sales, receipt and adjustment history. Deleting a product permanently removes its catalog record.</p>
   <form method="post">{% csrf_token %}<button type="submit">Delete product</button> <a href="{% url 'product_list' %}">Cancel</a></form>
 </section>
 {% endblock %}

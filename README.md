@@ -4,7 +4,7 @@ Qoyma is a lightweight, offline-capable ERP system designed for small grocery st
 
 ## System Architecture
 - **Framework**: Django 5.2 (MVT Architecture)
-- **Database**: SQLite3 () with relational 8-entity schema
+- **Database**: SQLite with a relational inventory ledger
 - **Security**: Role-Based Access Control (), PBKDF2 password hashing
 - **Transactions**: Atomic updates () for inventory safety
 
@@ -12,8 +12,27 @@ Qoyma is a lightweight, offline-capable ERP system designed for small grocery st
 
 Managers and Admins can open `/products/` from the POS **Products** link to search,
 create, edit and safely delete products through Django ORM views. Stock stays
-under receipt/sales control. See [the ORM demo guide](docs/orm_catalog.md) for
+under receipt, sale and physical-count workflows. See [the ORM demo guide](docs/orm_catalog.md) for
 presentation steps, implementation details and tests.
+
+## Inventory adjustments and audit
+
+Managers and Admins can open **Products → Adjust stock**, enter the physical
+count and explain the difference. Posting saves the new balance and its audit
+entry in one transaction. If another movement posts while the count is open,
+reload the form and recount. Corrections use a new entry so the original
+reason and balance remain visible.
+
+Open **Products → Inventory audit → Download Excel** to review all recorded
+sales, receipts and adjustments, including the user, time, product, source or
+reason, and before/change/after quantities. The ledger starts with the first
+posting after migration `0004_stock_movement`. Existing stock is the opening
+balance. The ledger covers application posting workflows. Direct database
+maintenance is outside its scope.
+
+The [presentation workbook](outputs/01a20d0a-1c8c-7583-9cab-dcba88182c4a/inventory-audit-demo.xlsx)
+reconciles a separate demo database. Five cartons received, three sold and one
+damaged take an opening count of 20 to a closing count of 21.
 
 ## Team Roles
 1. Systems Analysis & Requirements Lead: Aizada (24B031644)

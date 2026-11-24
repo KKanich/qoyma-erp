@@ -1,9 +1,12 @@
 from django.contrib.auth import views as auth_views
 from django.urls import path
 
-from . import catalog, views
+from . import catalog, inventory, views
 
 urlpatterns = [
+    path('products/<int:pk>/adjust/', inventory.adjust_stock, name='adjust_stock'),
+    path('inventory/audit/', inventory.inventory_audit, name='inventory_audit'),
+    path('inventory/audit/xlsx/', inventory.inventory_xlsx, name='inventory_xlsx'),
     path('products/', catalog.product_list, name='product_list'),
     path('products/new/', catalog.product_edit, name='product_create'),
     path('products/<int:pk>/edit/', catalog.product_edit, name='product_edit'),

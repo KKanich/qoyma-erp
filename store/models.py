@@ -1,5 +1,6 @@
 from django.db import models, router, transaction
 from django.db.models import F
+from django.db.models.functions import Round
 from django.core.exceptions import ValidationError
 from django.contrib.auth.models import AbstractUser
 from django.core.validators import MinValueValidator, RegexValidator
@@ -62,7 +63,7 @@ class StockReceipt(models.Model):
 
     posted = models.BooleanField(default=False, editable=False)
 
-    def post(self):
+    def post(self, *, actor=None):
         """Apply all receipt lines exactly once, together with the posting marker."""
         if self.pk is None:
             raise ValidationError('Save the receipt before posting it.')
@@ -81,9 +82,13 @@ class StockReceipt(models.Model):
             for item in items:
                 item.full_clean()
                 total += item.quantity * item.purchase_price
+                product = Product.objects.using(using).select_for_update().get(pk=item.product_id)
+                before = product.quantity
+                product.quantity = Product._meta.get_field('quantity').clean(before + item.quantity, product)
                 Product.objects.using(using).filter(pk=item.product_id).update(
-                    quantity=F('quantity') + item.quantity,
+                    quantity=Round(F('quantity') + item.quantity, 2),
                 )
+                StockMovement.record(product, before, actor or self.received_by, receipt_item=item)
             total = total.quantize(Decimal('0.01'))
             self._meta.get_field('total_amount').clean(total, self)
             type(self).objects.using(using).filter(pk=self.pk).update(total_amount=total)
@@ -115,3 +120,58 @@ class SaleItem(models.Model):
     quantity = models.DecimalField(max_digits=10, decimal_places=2, validators=[MinValueValidator(Decimal('0.01'))])
     unit_price = models.DecimalField(max_digits=10, decimal_places=2, validators=[MinValueValidator(Decimal('0.01'))])
     subtotal = models.DecimalField(max_digits=12, decimal_places=2)
+
+
+class StockMovement(models.Model):
+    """One committed stock change. Source lines identify sales and deliveries."""
+    product = models.ForeignKey(Product, on_delete=models.PROTECT)
+    actor = models.ForeignKey(User, on_delete=models.PROTECT)
+    recorded_at = models.DateTimeField(auto_now_add=True)
+    product_name = models.CharField(max_length=200)
+    barcode = models.CharField(max_length=13)
+    username = models.CharField(max_length=150)
+    before = models.DecimalField(max_digits=10, decimal_places=2)
+    after = models.DecimalField(max_digits=10, decimal_places=2)
+    sale_item = models.OneToOneField(SaleItem, null=True, on_delete=models.PROTECT)
+    receipt_item = models.OneToOneField(StockReceiptItem, null=True, on_delete=models.PROTECT)
+    reason = models.CharField(max_length=200, blank=True)
+
+    class Meta:
+        constraints = [
+            models.CheckConstraint(name='stock_movement_valid', check=(
+                models.Q(before__gte=0, after__gte=0) & (
+                    models.Q(sale_item__isnull=False, receipt_item__isnull=True, after__lt=F('before'), reason='')
+                    | models.Q(receipt_item__isnull=False, sale_item__isnull=True, after__gt=F('before'), reason='')
+                    | (models.Q(sale_item__isnull=True, receipt_item__isnull=True)
+                       & ~models.Q(reason='') & ~models.Q(after=F('before')))
+                )
+            )),
+        ]
+
+    @classmethod
+    def record(cls, product, before, actor, **source):
+        return cls.objects.using(product._state.db).create(
+            product=product, actor=actor, username=actor.username,
+            product_name=product.name, barcode=product.barcode,
+            before=before, after=product.quantity, **source,
+        )
+
+    @property
+    def change(self):
+        return self.after - self.before
+
+    @property
+    def kind(self):
+        if self.sale_item_id:
+            return 'Sale'
+        if self.receipt_item_id:
+            return 'Receipt'
+        return 'Adjustment'
+
+    @property
+    def reference(self):
+        if self.sale_item_id:
+            return f'Sale #{self.sale_item.sale_id}'
+        if self.receipt_item_id:
+            return f'Receipt #{self.receipt_item.stock_receipt_id}'
+        return self.reason

@@ -48,6 +48,21 @@ class BrowserJourneys(StaticLiveServerTestCase):
         # Run and consume the registered cleanups before inspecting persisted data.
         self.doCleanups()
 
+    def test_manager_posts_a_physical_count_and_downloads_ledger(self):
+        self.login('browser-manager')
+        self.page.get_by_role('link', name='Products', exact=True).click()
+        self.page.get_by_role('link', name='Adjust stock').click()
+        self.page.get_by_label('Counted stock').fill('19')
+        self.page.get_by_label('Reason for the difference').fill('One damaged carton removed')
+        self.page.get_by_role('button', name='Post adjustment').click()
+        row = self.page.get_by_role('row').filter(has_text='One damaged carton removed')
+        expect(row).to_contain_text('browser-manager')
+        expect(row.get_by_role('cell').nth(4)).to_have_text('20.00')
+        expect(row.get_by_role('cell').nth(6)).to_have_text('19.00')
+        with self.page.expect_download() as download:
+            self.page.get_by_role('link', name='Download Excel').click()
+        self.assertTrue(download.value.suggested_filename.endswith('.xlsx'))
+
     def test_e01_manager_receives_then_cashier_sells_and_logs_out(self):
         self.login('browser-manager')
         self.page.get_by_role('link', name='Receive stock', exact=True).click()

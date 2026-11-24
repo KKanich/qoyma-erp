@@ -88,18 +88,20 @@ class Command(BaseCommand):
             ('4870000000332', 'Шұбат 1л', 'Ұлттық өнімдер', '1700.00', '6.00', '4.00', 6),
         ]
         for barcode, name, cat, price, qty, min_qty, days in products:
-            Product.objects.update_or_create(
-                barcode=barcode,
-                defaults={
-                    'name': name,
-                    'category': cats[cat],
-                    'supplier': supplier2 if cat == 'Dairy' else supplier,
-                    'sale_price': Decimal(price),
-                    'quantity': Decimal(qty),
-                    'min_quantity': Decimal(min_qty),
-                    'expiry_date': today + timedelta(days=days),
-                },
+            details = {
+                'name': name, 'category': cats[cat],
+                'supplier': supplier2 if cat == 'Dairy' else supplier,
+                'sale_price': Decimal(price), 'min_quantity': Decimal(min_qty),
+                'expiry_date': today + timedelta(days=days),
+            }
+            product, created = Product.objects.get_or_create(
+                barcode=barcode, defaults={**details, 'quantity': Decimal(qty)},
             )
+            # Re-running the demo setup must preserve posted stock movements.
+            if not created:
+                for field, value in details.items():
+                    setattr(product, field, value)
+                product.save(update_fields=details.keys())
 
         self.stdout.write(self.style.SUCCESS(f'Demo data created: {Product.objects.count()} products, {Category.objects.count()} categories.'))
         for username, password, role, *_ in DEMO_USERS:

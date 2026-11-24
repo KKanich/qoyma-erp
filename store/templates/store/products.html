@@ -7,13 +7,13 @@
     <label><input type="checkbox" name="low" value="1" {% if low_stock %}checked{% endif %}> Low stock only</label>
     <button type="submit">Search</button><a href="{% url 'product_list' %}">Reset</a>
   </form>
-  <p class="muted">{{ page.paginator.count }} products found · Stock is updated through deliveries and sales.</p>
+  <p class="muted">{{ page.paginator.count }} products found · <a href="{% url 'inventory_audit' %}">Inventory audit</a></p>
   <div class="scroll"><table>
     <thead><tr><th>Product / barcode</th><th>Category</th><th>Supplier</th><th>Price (₸)</th><th>Stock / minimum</th><th>Expiry</th><th>Actions</th></tr></thead>
     <tbody>{% for p in page %}<tr>
       <td>{{ p.name }}<br><span class="muted">{{ p.barcode }}</span></td><td>{{ p.category.name }}</td><td>{{ p.supplier.name|default:'—' }}</td><td>{{ p.sale_price }}</td>
       <td class="{% if p.quantity <= p.min_quantity %}low{% endif %}">{{ p.quantity }} / {{ p.min_quantity }}</td><td>{{ p.expiry_date|date:'Y-m-d' }}</td>
-      <td class="actions"><a href="{% url 'product_edit' p.pk %}">Edit</a> · <a href="{% url 'product_delete' p.pk %}">Delete</a></td>
+      <td class="actions"><a href="{% url 'adjust_stock' p.pk %}">Adjust stock</a> · <a href="{% url 'product_edit' p.pk %}">Edit</a> · <a href="{% url 'product_delete' p.pk %}">Delete</a></td>
     </tr>{% empty %}<tr><td colspan="7">No products match. Try another search or create a product.</td></tr>{% endfor %}</tbody>
   </table></div>
   <p>Page {{ page.number }} of {{ page.paginator.num_pages }}

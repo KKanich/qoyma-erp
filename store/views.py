@@ -12,7 +12,7 @@ from django.views.decorators.csrf import ensure_csrf_cookie
 from django.utils import timezone
 
 from .decorators import role_required
-from .models import Product, Sale, SaleItem, Supplier
+from .models import Product, Sale, SaleItem, StockMovement, Supplier
 from .services import receive_stock
 from .reports import daily_sales_summary, sales_rows
 from .excel_export import build_sales_workbook
@@ -78,17 +78,19 @@ def pos_checkout(request):
                         f'Insufficient stock for {product.name}. Available: {product.quantity}'
                     )
 
+                before = product.quantity
                 product.quantity -= sale_qty
                 product.save()
 
                 subtotal = product.sale_price * sale_qty
-                SaleItem.objects.create(
+                line = SaleItem.objects.create(
                     sale=sale,
                     product=product,
                     quantity=sale_qty,
                     unit_price=product.sale_price,  # price snapshot (3NF / history)
                     subtotal=subtotal,
                 )
+                StockMovement.record(product, before, request.user, sale_item=line)
                 running_total += subtotal
 
             sale.total_amount = running_total

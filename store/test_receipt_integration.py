@@ -60,4 +60,5 @@ class ReceiptMigrationIntegrationTests(TransactionTestCase):
             self.assertFalse(migrated.post())
             self.assertEqual(Product.objects.get(pk=product.pk).quantity, Decimal('25'))
         finally:
-            MigrationExecutor(connection).migrate(latest)
+            executor = MigrationExecutor(connection)
+            executor.migrate(executor.loader.graph.leaf_nodes())

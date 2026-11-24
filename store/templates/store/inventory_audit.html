@@ -1,0 +1,18 @@
+{% extends 'store/catalog_base.html' %}
+{% block title %}Inventory audit{% endblock %}
+{% block content %}
+<section>
+  <div class="toolbar"><h1>Inventory audit</h1><a href="{% url 'inventory_xlsx' %}">Download Excel</a></div>
+  <p class="muted">Sales, receipts and stock counts recorded since inventory logging began. Times are local.</p>
+  <div class="scroll"><table>
+    <thead><tr><th>ID</th><th>Recorded</th><th>Product / barcode</th><th>Type</th><th>Before</th><th>Change</th><th>After</th><th>User</th><th>Source or reason</th></tr></thead>
+    <tbody>{% for m in page %}<tr>
+      <td>{{ m.pk }}</td><td>{{ m.recorded_at|date:'Y-m-d H:i:s' }}</td><td>{{ m.product_name }}<br>{{ m.barcode }}</td>
+      <td>{{ m.kind }}</td><td>{{ m.before }}</td><td>{{ m.change }}</td><td>{{ m.after }}</td><td>{{ m.username }}</td><td>{{ m.reference }}</td>
+    </tr>{% empty %}<tr><td colspan="9">No inventory movements recorded yet.</td></tr>{% endfor %}</tbody>
+  </table></div>
+  {% if page.has_other_pages %}<p>Page {{ page.number }} of {{ page.paginator.num_pages }}
+    {% if page.has_previous %}<a href="?page={{ page.previous_page_number }}">Previous</a>{% endif %}
+    {% if page.has_next %}<a href="?page={{ page.next_page_number }}">Next</a>{% endif %}</p>{% endif %}
+</section>
+{% endblock %}
