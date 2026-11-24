@@ -13,7 +13,9 @@ if not SECRET_KEY:
     raise ImproperlyConfigured('SECRET_KEY is not set: copy .env.example to .env (see README).')
 
 DEBUG = os.environ.get('DEBUG', 'False').lower() in ('true', '1')
-ALLOWED_HOSTS = ['127.0.0.1', 'localhost']
+ALLOWED_HOSTS = [value.strip() for value in os.environ.get('ALLOWED_HOSTS', '127.0.0.1,localhost').split(',') if value.strip()]
+SCANNER_PUBLIC_BASE_URL = os.environ.get('SCANNER_PUBLIC_BASE_URL', '').rstrip('/')
+CSRF_TRUSTED_ORIGINS = [value.strip() for value in os.environ.get('CSRF_TRUSTED_ORIGINS', '').split(',') if value.strip()]
 
 INSTALLED_APPS = [
     'django.contrib.admin',

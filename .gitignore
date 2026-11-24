@@ -3,6 +3,7 @@ __pycache__/
 *.py[cod]
 .venv/
 venv/
+venv.broken/
 env/
 
 # Local configuration and secrets
@@ -37,3 +38,6 @@ htmlcov/
 .DS_Store
 *.swp
 *.swo
+
+# Local scanner certificates and private keys
+/.scanner-tls/

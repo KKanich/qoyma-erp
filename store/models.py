@@ -1,3 +1,5 @@
+import uuid
+
 from django.db import models, router, transaction
 from django.db.models import F
 from django.db.models.functions import Round
@@ -175,3 +177,30 @@ class StockMovement(models.Model):
         if self.receipt_item_id:
             return f'Receipt #{self.receipt_item.stock_receipt_id}'
         return self.reason
+
+
+class ReceiptScanSession(models.Model):
+    """Short-lived pairing for one open admin receipt form."""
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    owner = models.ForeignKey(User, on_delete=models.CASCADE)
+    receipt = models.ForeignKey(StockReceipt, null=True, blank=True, on_delete=models.CASCADE)
+    created_at = models.DateTimeField(auto_now_add=True)
+    expires_at = models.DateTimeField()
+    heartbeat_at = models.DateTimeField()
+    closed = models.BooleanField(default=False)
+
+
+class ReceiptScanEvent(models.Model):
+    session = models.ForeignKey(ReceiptScanSession, related_name='events', on_delete=models.CASCADE)
+    request_id = models.UUIDField()
+    barcode = models.CharField(max_length=13)
+    status = models.CharField(max_length=12, default='pending', choices=[
+        ('pending', 'Pending'), ('applied', 'Applied'), ('rejected', 'Rejected'),
+    ])
+    message = models.CharField(max_length=250, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        constraints = [models.UniqueConstraint(
+            fields=['session', 'request_id'], name='unique_receipt_scan_request',
+        )]

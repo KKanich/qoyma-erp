@@ -83,7 +83,7 @@ class StockReceiptAdmin(admin.ModelAdmin):
         return super().render_change_form(request, context, add, change, form_url, obj)
 
     def save_related(self, request, form, formsets, change):
-        
+        # Django wraps the entire admin change form (header + inlines) in atomic().
         super().save_related(request, form, formsets, change)
         form.instance.post(actor=request.user)
 

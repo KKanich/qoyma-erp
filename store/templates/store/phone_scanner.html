@@ -1,0 +1,29 @@
+{% load static %}
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="referrer" content="no-referrer">
+  <title>Qoyma — сканер телефона</title>
+  <style>
+    body{font:17px system-ui,sans-serif;margin:0;background:#eef2f6;color:#152334}main{max-width:540px;margin:auto;padding:20px}h1{font-size:25px}video{width:100%;max-height:48vh;background:#111;border-radius:16px;object-fit:cover}button,input{box-sizing:border-box;font:inherit;padding:14px;border-radius:10px;margin:6px 0;width:100%}button{background:#176b52;color:white;border:0;cursor:pointer}button:disabled{opacity:.5}#camera-stop{background:#445164}#scan-message{padding:14px;background:white;border-radius:10px;min-height:48px}small{color:#485566}details{margin-top:20px}input{border:1px solid #aab8c5}.viewfinder{position:relative}.viewfinder video{display:block}.aim{position:absolute;left:8%;right:8%;top:50%;height:2px;background:#e53935;box-shadow:0 0 6px #e53935;pointer-events:none}#scan-stats{display:block;min-height:1.2em}#scan-message{transition:background-color .6s}#scan-message.ok{background:#d4f5e2;color:#0b5132;animation:flash-ok .9s}#scan-message.error{background:#fde2e1;color:#8a1c17;animation:flash-err .9s}@keyframes flash-ok{0%{background:#5ad69a}}@keyframes flash-err{0%{background:#f28b85}}
+  </style>
+  <script src="{% static 'store/vendor/zxing-browser.min.js' %}" defer></script>
+  <script src="{% static 'store/js/phone_camera.js' %}" defer></script>
+</head>
+<body><main id="phone-scanner" data-submit-url="{% url 'scanner_submit' scan_session.pk %}">
+  <h1>Сканер прихода</h1>
+  <p>Пользователь: <strong>{{ request.user.username }}</strong>. Товары добавляются в связанную форму на Mac.</p>
+  {% csrf_token %}
+  <div class="viewfinder"><video id="camera-preview" autoplay playsinline muted></video><span class="aim" aria-hidden="true"></span></div>
+  <small id="scan-stats" aria-live="off"></small>
+  <button type="button" id="camera-start">Включить камеру</button>
+  <button type="button" id="camera-stop" hidden>Выключить камеру</button>
+  <p id="scan-message" role="status" aria-live="polite">Наведите заднюю камеру на штрихкод товара.</p>
+  <button type="button" id="scan-retry" hidden>Повторить отправку</button>
+  <small>Камера сканирует непрерывно, нажимать ничего не нужно: после звука «готово» наводите на следующий товар. Каждый товар добавляется один раз, пока штрихкод в кадре; чтобы добавить ещё одну единицу того же товара, уберите камеру на секунду и наведите снова. Цену и общее количество можно изменить на Mac; остатки изменятся после Save.</small>
+  <details><summary>Ввести код вручную</summary>
+    <input id="manual-code" inputmode="numeric" maxlength="13" placeholder="13 цифр" aria-label="Штрихкод вручную">
+    <button type="button" id="manual-send">Отправить код</button>
+  </details>
+</main></body></html>

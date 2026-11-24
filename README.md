@@ -205,3 +205,100 @@ python manage.py test store.test_daily_report store.test_report_page store.test_
 - [User guide](docs/user_guide.md) — how cashier and manager use the system
 - [UAT scenario and results](docs/uat_scenario.md) — 17-step acceptance test
 - [UAT defects](docs/uat_defects.md) — defects found and their status
+
+## Phone camera → receipt form on Mac
+
+This feature is on the **admin StockReceipt form**, not the single-item `/receive/` page.
+Install dependencies (`venv/bin/pip install -r requirements.txt`) and run
+`venv/bin/python manage.py migrate` before starting the server.
+
+1. Open `/admin/store/stockreceipt/add/` on Mac and click **Подключить телефон**.
+2. Scan the pairing QR with the phone's normal camera. Open the link in Safari/Chrome
+   and sign in as the **same staff user** with receipt and receipt-item add permissions.
+3. Tap **Включить камеру** once and grant camera access (later visits start the camera
+   automatically). Point at EAN-13 barcodes one after another — no buttons, no Enter.
+4. On **Добавлено на Mac** the phone plays a "done" sound (a low tone on rejection) and the
+   line appears in the Mac form (or its quantity increases by one). Scanning continues
+   automatically. A barcode kept in view is counted once; to add another unit of the same
+   product, move the camera away for ~1.5 s and back. A different product counts at once.
+5. Enter purchase prices on Mac and save the receipt as usual. Scans only change
+   the unsaved form. Existing atomic posting still handles inventory updates.
+
+### HTTPS is required on the phone
+
+`http://127.0.0.1:8002` works only on Mac. A phone camera requires a trusted HTTPS
+origin; plain LAN HTTP and untrusted self-signed certificates are not sufficient.
+Use an existing HTTPS reverse proxy / deployed site, or configure a locally trusted
+certificate on both devices. For an existing HTTPS endpoint set in `.env`:
+
+```dotenv
+ALLOWED_HOSTS=127.0.0.1,localhost,erp.example.com
+SCANNER_PUBLIC_BASE_URL=https://erp.example.com
+CSRF_TRUSTED_ORIGINS=https://erp.example.com
+```
+
+Replace the example hostname with the real endpoint, proxy it to the Django server,
+serve `/static/` normally, and restart Django. The public base URL must point to
+**this same application and database**, without a path prefix. Keep Mac and phone
+on the same HTTPS origin where possible. Configure forwarded-protocol trust only
+for a trusted reverse proxy that strips client-supplied forwarded headers.
+No tunnel or public exposure is enabled automatically by this change.
+
+### Reliability and access
+
+Each open form gets a random session UUID valid for 30 minutes. All endpoints require
+login, ownership and receipt permissions; write requests require CSRF. The phone
+link alone does not grant access. Mac polls the queue once per second and acknowledges
+whether the scan was added or rejected. Retries retain the same request UUID; a unique
+DB constraint prevents duplicate events, and Mac caches already handled events until
+the pairing closes. Repeated deliberate scans get new UUIDs and add one each.
+
+Keep the Mac tab open and active. After 20 seconds without its heartbeat, new scans
+are refused until Mac reconnects. Navigating away, saving the form, or clicking
+**Отключить телефон** closes the pairing; expired sessions are rejected server-side.
+Reloading the page does not restore unsaved receipt rows: reconnect the phone and
+check the form before continuing. Unknown codes do not create products automatically.
+The catalog is loaded when the Mac form opens; newly created products require a new form.
+Camera frames stay on the phone; only the barcode and request UUID go to the server.
+
+ZXing Browser 0.1.5 is vendored under `store/static/store/vendor/` with its license,
+so camera decoding does not depend on a runtime CDN request. QR generation uses
+`qrcode==8.2`. The manual code field on the phone page is a fallback and permits
+relay testing without camera hardware. It does not substitute for a real-device
+camera test on iOS/Android over HTTPS.
+
+Tests: `venv/bin/python manage.py test store.test_phone_scanner`.
+
+### Local Wi-Fi camera demo (no public hosting)
+
+The repository includes `setup_scanner_tls` and `runscanner_tls` for local development.
+They generate certificates under the ignored `.scanner-tls/` folder. They do **not**
+install a CA into system trust. Only distribute `.scanner-tls/public/qoyma-local-ca.cer`;
+never distribute `ca.key` or `server.key`.
+
+1. Find the Mac Wi-Fi IPv4 address (`ifconfig en0`) and replace `<LAN-IP>` below.
+2. Generate a 30-day server certificate: `venv/bin/python manage.py setup_scanner_tls --host <LAN-IP>`.
+3. Set `.env`: `ALLOWED_HOSTS=127.0.0.1,localhost,<LAN-IP>`,
+   `SCANNER_PUBLIC_BASE_URL=https://<LAN-IP>:8443`,
+   `CSRF_TRUSTED_ORIGINS=https://<LAN-IP>:8443`.
+4. Start HTTPS: `venv/bin/python manage.py runscanner_tls <LAN-IP>:8443 --noreload`.
+5. In another terminal start the Mac-only UI:
+   `venv/bin/python manage.py runserver 127.0.0.1:8004 --noreload`.
+6. Transfer the **public** CA to your phone (AirDrop is fine), or temporarily serve
+   only that folder: `venv/bin/python -m http.server 8765 --bind <LAN-IP> --directory .scanner-tls/public`.
+   Download `http://<LAN-IP>:8765/qoyma-local-ca.cer` on the phone.
+7. Install and trust the CA on your own phone. On iPhone install the downloaded
+   profile in Settings → General → VPN & Device Management, then enable it under
+   General → About → Certificate Trust Settings. On Android use Security →
+   Encryption & credentials → Install a certificate → CA certificate (labels vary).
+   This explicitly trusts certificates signed by this local CA; remove the profile
+   after the demo if no longer needed. Do not bypass browser certificate warnings.
+8. Both devices must share a Wi-Fi network allowing peer-to-peer connections. Open
+   `http://127.0.0.1:8004/admin/store/stockreceipt/add/` on Mac, click Connect Phone,
+   scan its QR on the phone, sign in with the same user and allow the camera.
+
+If the Mac IP changes, regenerate the server certificate with the new IP, update
+`.env`, and restart both servers. The CA remains the same. Stop the certificate
+HTTP server after transferring the CA. The development HTTPS command is not a
+production deployment server. Camera permission and certificate trust on the physical
+phone must be completed by its owner.

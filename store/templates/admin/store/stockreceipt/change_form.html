@@ -11,9 +11,20 @@
     <p class="help">Повторное сканирование добавляет 1 к количеству. Укажите закупочную цену в строке товара. Остаток изменится только после Save.</p>
     <p id="receipt-scan-status" role="status" aria-live="polite"></p>
   </div>
+  <div class="form-row" id="phone-pairing" data-create-url="{% url 'scanner_create' %}" data-receipt-id="{{ original.pk|default:'' }}">
+    <button type="button" id="phone-connect">Подключить телефон</button>
+    <button type="button" id="phone-disconnect" hidden>Отключить телефон</button>
+    <p id="phone-status" role="status" aria-live="polite">Сканируйте камерой телефона — товары появятся в этой форме на Mac.</p>
+    <div id="phone-pair-details" hidden>
+      <img id="phone-qr" width="220" height="220" alt="QR-код подключения телефона" style="background:white;padding:8px">
+      <p><a id="phone-link" target="_blank" rel="noopener">Открыть сканер телефона</a></p>
+      <p class="help">Откройте ссылку на телефоне и войдите под тем же пользователем. Связь действует 30 минут. Держите эту вкладку Mac открытой.</p>
+    </div>
+  </div>
 </fieldset>
 {{ receipt_scan_products|json_script:"receipt-scan-products" }}
 <script src="{% static 'store/js/receipt_scan.js' %}" defer></script>
+<script src="{% static 'store/js/receipt_phone.js' %}" defer></script>
 {% endif %}
 {{ block.super }}
 {% endblock %}

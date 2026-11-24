@@ -10,18 +10,17 @@
         .filter(row => !row.classList.contains('empty-form') && !row.querySelector('input[name$="-DELETE"]')?.checked);
     const select = row => row.querySelector('select[name$="-product"]');
     const quantity = row => row.querySelector('input[name$="-quantity"]');
-    function scan() {
-        const barcode = input.value.trim();
+    function scan(barcode = input.value.trim()) {
         if (!/^\d{13}$/.test(barcode)) {
             status.textContent = 'Введите штрихкод из 13 цифр.';
             input.select();
-            return;
+            return false;
         }
         const product = products.get(barcode);
         if (!product) {
             status.textContent = 'Товар не найден. Создайте карточку товара через «+» рядом с Product, затем отсканируйте снова после открытия новой формы прихода. Не перезагружайте несохранённый приход.';
             input.select();
-            return;
+            return false;
         }
         let row = rows().find(row => select(row)?.value === String(product.id));
         if (row) {
@@ -29,7 +28,7 @@
             const value = Number(field.value);
             if (!Number.isFinite(value) || value < 0 || value + 1 > 99999999.99) {
                 status.textContent = 'Исправьте количество в строке товара перед сканированием.';
-                return;
+                return false;
             }
             field.value = (Math.round(value * 100) + 100) / 100;
         } else {
@@ -40,7 +39,7 @@
             }
             if (!row) {
                 status.textContent = 'Не удалось добавить строку. Проверьте лимит позиций.';
-                return;
+                return false;
             }
             select(row).value = String(product.id);
             select(row).dispatchEvent(new Event('change', {bubbles: true}));
@@ -50,12 +49,17 @@
         status.textContent = `${product.name}: количество ${quantity(row).value}. Проверьте закупочную цену.`;
         input.value = '';
         input.focus();
+        return true;
     }
+    window.qoymaScanBarcode = barcode => {
+        const applied = scan(barcode);
+        return {status: applied ? 'applied' : 'rejected', message: status.textContent};
+    };
     input.addEventListener('keydown', event => {
         if (event.key === 'Enter') {
             event.preventDefault();
             scan();
         }
     });
-    document.getElementById('receipt-scan').addEventListener('click', scan);
+    document.getElementById('receipt-scan').addEventListener('click', () => scan());
 })();
