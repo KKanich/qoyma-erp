@@ -374,7 +374,7 @@ class LedgerIntegrationWithCheckoutReceiptsAdminCatalogSeedTests(TestCase):
         self.manager = User.objects.create_user('flow-manager', password='pw', role='Manager')
         self.cashier = User.objects.create_user('flow-cashier', password='pw', role='Cashier')
         self.supplier = Supplier.objects.create(name='Flow supplier', phone='123')
-        self.product = make_product(barcode='4870000000011', quantity=Decimal('20.00'))
+        self.product = make_product(barcode='4870000000012', quantity=Decimal('20.00'))
 
     def test_multiline_checkout_and_failed_receipt_ledger_atomicity(self):
         self.client.force_login(self.cashier)
@@ -492,7 +492,7 @@ class LedgerIntegrationWithCheckoutReceiptsAdminCatalogSeedTests(TestCase):
     def test_seed_demo_preserves_existing_product_quantity_and_movements(self):
         out = StringIO()
         call_command('seed_demo', stdout=out)
-        milk = Product.objects.get(barcode='4870000000011')
+        milk = Product.objects.get(pk=self.product.pk)
         self.assertEqual(milk.quantity, Decimal('20.00'))
 
         # Adjust Milk from 20 -> 15 and mutate sale_price; delete another demo product.
@@ -502,7 +502,7 @@ class LedgerIntegrationWithCheckoutReceiptsAdminCatalogSeedTests(TestCase):
             'counted': '15.00', 'reason': 'Demo count before re-seed',
         })
         Product.objects.filter(pk=milk.pk).update(sale_price=Decimal('999.00'))
-        Product.objects.filter(barcode='4870000000332').delete()
+        Product.objects.get(barcode='4870000000333').delete()
 
         # Re-running seed_demo updates catalog details & recreates missing items,
         # while preserving Milk's adjusted stock quantity and StockMovement history.
@@ -511,5 +511,5 @@ class LedgerIntegrationWithCheckoutReceiptsAdminCatalogSeedTests(TestCase):
         self.assertEqual(milk.sale_price, Decimal('550.00'))
         self.assertEqual(milk.quantity, Decimal('15.00'))
         self.assertEqual(StockMovement.objects.filter(product=milk).count(), 1)
-        recreated = Product.objects.get(barcode='4870000000332')
+        recreated = Product.objects.get(barcode='4870000000333')
         self.assertEqual(recreated.quantity, Decimal('6.00'))

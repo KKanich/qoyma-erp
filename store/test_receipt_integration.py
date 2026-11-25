@@ -6,7 +6,7 @@ from django.db.migrations.executor import MigrationExecutor
 from django.test import TestCase, TransactionTestCase
 from django.utils import timezone
 
-from .models import Supplier, User
+from .models import Product, StockMovement, Supplier, User
 from .services import receive_stock
 from .tests import make_product
 
@@ -29,6 +29,30 @@ class ReceiptWorkflowIntegrationTests(TestCase):
 
 
 class ReceiptMigrationIntegrationTests(TransactionTestCase):
+    def test_scanner_upgrade_preserves_stock_history_and_existing_barcodes(self):
+        executor = MigrationExecutor(connection)
+        latest = executor.loader.graph.leaf_nodes()
+        try:
+            executor.migrate([('store', '0005_merge_20261124_1857')])
+            milk = make_product(barcode='4870000000011', name='Milk 2.5% 1L', quantity=18)
+            actor = User.objects.create(username='counter')
+            movement = StockMovement.record(milk, 20, actor, reason='Shelf count')
+            # Both codes already exist for kefir. The migration must preserve
+            # the two rows and their respective quantities for reconciliation.
+            legacy = make_product(barcode='4870000000028', name='Kefir 1L', quantity=3)
+            current = make_product(barcode='4870000000029', name='Kefir 1L', quantity=4)
+            custom = make_product(barcode='4870000000035', name='Custom item')
+            MigrationExecutor(connection).migrate(latest)
+            milk.refresh_from_db()
+            movement.refresh_from_db()
+            self.assertEqual((milk.barcode, milk.quantity), ('4870000000012', 18))
+            self.assertEqual((movement.product_id, movement.barcode), (milk.pk, '4870000000011'))
+            for product in (legacy, current, custom):
+                saved = Product.objects.get(pk=product.pk)
+                self.assertEqual((saved.barcode, saved.quantity), (product.barcode, product.quantity))
+        finally:
+            MigrationExecutor(connection).migrate(latest)
+
     def test_legacy_receipts_preserve_stock_and_cannot_be_reposted(self):
         previous = [('store', '0002_stockreceiptitem_expiry_date')]
         latest = [('store', '0003_merge_receipt_workflows')]
@@ -54,7 +78,7 @@ class ReceiptMigrationIntegrationTests(TransactionTestCase):
                 stock_receipt=receipt, product=product, quantity='5', purchase_price='100',
             )
             MigrationExecutor(connection).migrate(latest)
-            from .models import Product, StockReceipt
+            from .models import StockReceipt
             migrated = StockReceipt.objects.get(pk=receipt.pk)
             self.assertTrue(migrated.posted)
             self.assertFalse(migrated.post())

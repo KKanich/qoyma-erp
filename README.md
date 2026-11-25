@@ -212,6 +212,11 @@ This feature is on the **admin StockReceipt form**, not the single-item `/receiv
 Install dependencies (`venv/bin/pip install -r requirements.txt`) and run
 `venv/bin/python manage.py migrate` before starting the server.
 
+For existing demo catalogs, migration `0006_correct_demo_barcodes` updates the
+EAN-13 check digits in place. Product IDs, quantities and historical audit
+entries are preserved. If both barcode versions already exist, reconcile those
+two product records using their stock counts and histories.
+
 1. Open `/admin/store/stockreceipt/add/` on Mac and click **Подключить телефон**.
 2. Scan the pairing QR with the phone's normal camera. Open the link in Safari/Chrome
    and sign in as the **same staff user** with receipt and receipt-item add permissions.

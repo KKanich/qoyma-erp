@@ -94,3 +94,28 @@ CREATE TABLE IF NOT EXISTS store_stockmovement (
 
 CREATE INDEX IF NOT EXISTS stockmovement_product ON store_stockmovement(product_id);
 CREATE INDEX IF NOT EXISTS stockmovement_actor ON store_stockmovement(actor_id);
+
+CREATE TABLE IF NOT EXISTS store_receiptscansession (
+    id CHAR(32) NOT NULL PRIMARY KEY,
+    owner_id INTEGER NOT NULL REFERENCES store_user(id) ON DELETE CASCADE,
+    receipt_id INTEGER REFERENCES store_stockreceipt(id) ON DELETE CASCADE,
+    created_at DATETIME NOT NULL,
+    expires_at DATETIME NOT NULL,
+    heartbeat_at DATETIME NOT NULL,
+    closed BOOLEAN NOT NULL DEFAULT 0
+);
+
+CREATE TABLE IF NOT EXISTS store_receiptscanevent (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    session_id CHAR(32) NOT NULL REFERENCES store_receiptscansession(id) ON DELETE CASCADE,
+    request_id CHAR(32) NOT NULL,
+    barcode VARCHAR(13) NOT NULL,
+    status VARCHAR(12) NOT NULL DEFAULT 'pending',
+    message VARCHAR(250) NOT NULL DEFAULT '',
+    created_at DATETIME NOT NULL,
+    CONSTRAINT unique_receipt_scan_request UNIQUE (session_id, request_id)
+);
+
+CREATE INDEX IF NOT EXISTS receiptscansession_owner ON store_receiptscansession(owner_id);
+CREATE INDEX IF NOT EXISTS receiptscansession_receipt ON store_receiptscansession(receipt_id);
+CREATE INDEX IF NOT EXISTS receiptscanevent_session ON store_receiptscanevent(session_id);

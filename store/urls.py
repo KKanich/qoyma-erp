@@ -1,8 +1,7 @@
 from django.contrib.auth import views as auth_views
 from django.urls import path
 
-from . import catalog, views, phone_scanner
-from . import catalog, inventory, views
+from . import catalog, inventory, phone_scanner, views
 
 urlpatterns = [
     path('scanner/sessions/', phone_scanner.create_session, name='scanner_create'),
