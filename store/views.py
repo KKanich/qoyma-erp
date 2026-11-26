@@ -18,6 +18,16 @@ from .reports import daily_sales_summary, sales_rows
 from .excel_export import build_sales_workbook
 
 
+def _report_day(request):
+    """Day from ?day=YYYY-MM-DD; today if missing, wrong or in the future."""
+    today = timezone.localdate()
+    try:
+        day = date.fromisoformat(request.GET.get('day', ''))
+    except ValueError:
+        return today
+    return min(day, today)
+
+
 class CheckoutError(Exception):
     """A business-rule problem in the cart. The whole sale is rolled back."""
 
@@ -181,15 +191,16 @@ def receive_page(request):
 @role_required('Manager', 'Admin')
 def report_page(request):
     """Daily sales report dashboard for the manager (AC-D1..AC-D8, AC-D11)."""
-    summary = daily_sales_summary()
-    return render(request, 'store/report.html', {'s': summary})
+    summary = daily_sales_summary(_report_day(request))
+    return render(request, 'store/report.html',
+                  {'s': summary, 'today': timezone.localdate()})
 
 
 
 @role_required('Manager', 'Admin')
 def report_csv(request):
-    """Download today's sales as a CSV file (AC-D9, AC-D10)."""
-    day = timezone.localdate()
+    """Download the chosen day's sales as a CSV file (AC-D9, AC-D10)."""
+    day = _report_day(request)
     response = HttpResponse(content_type='text/csv; charset=utf-8')
     response['Content-Disposition'] = f'attachment; filename="sales_{day}.csv"'
     response.write('\ufeff')  # so Excel shows Kazakh/Russian letters correctly
@@ -214,8 +225,8 @@ def report_csv(request):
 
 @role_required('Manager', 'Admin')
 def report_xlsx(request):
-    """Download today's report as a formatted Excel file (fixes UAT defect D-01)."""
-    summary = daily_sales_summary()
+    """Download the chosen day's report as a formatted Excel file (fixes UAT defect D-01)."""
+    summary = daily_sales_summary(_report_day(request))
     workbook = build_sales_workbook(summary, sales_rows(summary['day']), dict(Sale.PAYMENT_CHOICES))
     response = HttpResponse(
         content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')

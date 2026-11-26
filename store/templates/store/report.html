@@ -21,16 +21,23 @@
   <div><b>Daily sales report</b> <span>{{ s.day|date:"d.m.Y" }} · Bereke Grocery Store</span></div>
   <div>
     <span>{{ request.user.username }} ({{ request.user.role }})</span>
-    <a href="/report/xlsx/">Download Excel</a>
-    <a href="/report/csv/">Download CSV</a>
-    <a href="/">POS</a>
+    <a href="/report/xlsx/{% if s.day != today %}?day={{ s.day|date:'Y-m-d' }}{% endif %}">Download Excel</a>
+    <a href="/report/csv/{% if s.day != today %}?day={{ s.day|date:'Y-m-d' }}{% endif %}">Download CSV</a> <a href="/">POS</a>
     <a href="/receive/">Receive stock</a>
     <a href="/admin/">Admin panel</a>
+    <a href="/help/">Help</a>
   </div>
 </header>
 <main>
   <section>
-    <h2>Today</h2>
+    <form method="get" style="display:flex; gap:8px; align-items:center; margin-bottom:14px;">
+      <label for="day" class="muted">Day</label>
+      <input type="date" id="day" name="day"
+             value="{{ s.day|date:'Y-m-d' }}" max="{{ today|date:'Y-m-d' }}">
+      <button type="submit">Show</button>
+      {% if s.day != today %}<a href="/report/">Back to today</a>{% endif %}
+    </form>
+    <h2>Sales on {{ s.day|date:"d.m.Y" }}</h2>
     <div class="cards">
       <div class="card"><div class="label">Total sales</div><div class="value">{{ s.total|floatformat:2 }} ₸</div></div>
       <div class="card"><div class="label">Receipts</div><div class="value">{{ s.receipts }}</div></div>
@@ -56,7 +63,7 @@
       {% for p in s.top_products %}
         <tr><td>{{ p.product__name }}</td><td>{{ p.qty|floatformat:"-2" }}</td><td>{{ p.amount|floatformat:2 }}</td></tr>
       {% empty %}
-        <tr><td colspan="3" class="muted">No sales today</td></tr>
+        <tr><td colspan="3" class="muted">No sales on this day</td></tr>
       {% endfor %}
       </tbody>
     </table>
