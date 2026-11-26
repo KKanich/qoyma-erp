@@ -22,24 +22,25 @@ payment methods, top products, and can download the sales as a CSV file.
 | AC-D4 | Total is split by payment method (Cash/Kaspi/Card) | One Cash + one Kaspi QR sale → both amounts shown separately|
 
 ### B. Dashboard — products
-| ID    | Criterion                                          | How to check     
+| ID    | Criterion                                          | How to check   
+|-------|----------------------------------------------------|-------------------------------------------  
 | AC-D5 | Report shows top 5 products by quantity sold       | Milk sold 5, Bread sold 2 → Milk is first |
 | AC-D6 | Report shows products with low stock               | Kefir stock 4, minimum 5 → Kefir is in the low-stock list  |
 
 ### C. Data correctness
 | ID    | Criterion                              | How to check                        
-|-------|----------------------------------------|
-| AC-D7 | Only today's sales are counted         | A sale from yesterday is NOT included in today's total  
-| AC-D8 | Report works when there are no sales   | No sales today → total 0 ₸, receipts 0, no error  
+|-------|----------------------------------------|-----------------------------------------------------------
+| AC-D7 | Only today's sales are counted         | A sale from yesterday is NOT included in today's total  |
+| AC-D8 | Report works when there are no sales   | No sales today → total 0 ₸, receipts 0, no error        |
 
 ### D. CSV export
 | ID     | Criterion                                          | How to check  
-|--------|----------------------------------------------------|
+|--------|----------------------------------------------------|---------------------------------------------
 | AC-D9  | CSV with today's sales can be downloadedи          | Click "Download CSV" → file sales_YYYY-MM-DD.csv is downloaded
 | AC-D10 | CSV has one row per sold item with correct columns | Columns: sale_id, time, cashier, product, qty, unit_price, subtotal, payment |
 
 ### E. Access and Admin
 | ID     | Criterion                                         | How to check  
-|--------|------------------------------------------------|
-|AC-D11|Cashier cannot open the report or CSV     |Cashier opens /report/ or /report/csv/ → 403 Forbidden
+|--------|---------------------------------------------------|-----------------------------------------------
+|AC-D11|Cashier cannot open the report or CSV     |Cashier opens /report/ or /report/csv/ → 403 Forbidden  | 
 |AC-D12|Report can be opened from the Admin panel |Admin panel has a "Daily sales report" link→opens /report/
