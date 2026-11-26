@@ -1,0 +1,187 @@
+{% load static %}
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Qoyma — Help</title>
+<link rel="stylesheet" href="{% static 'store/css/pos.css' %}">
+<style>
+  .guide { max-width: 900px; margin: 0 auto; padding: 24px; line-height: 1.55; }
+  .guide h1 { font-size: 28px; margin: 0 0 6px; }
+  .guide h2 { margin-top: 32px; padding-top: 16px; border-top: 1px solid #23395a; color: #e8eef7;
+              font-size: 20px; text-transform: none; letter-spacing: 0; }
+  .guide h3 { margin-top: 22px; font-size: 17px; }
+  .guide p, .guide li { color: #c9d6e6; font-size: 15px; }
+  .guide img { max-width: 100%; border: 1px solid #23395a; border-radius: 10px; margin: 10px 0; }
+  .guide table { margin: 12px 0; }
+  .guide strong { color: #e8eef7; }
+  .toc { background: #16263d; border-radius: 10px; padding: 12px 18px; margin: 16px 0; }
+  .toc a, .guide a { color: #7fc8ff; }
+  .toc a { margin-right: 14px; }
+  .guide figure { margin: 0; }
+  .guide figcaption { display: none; }
+</style>
+</head>
+<body>
+<header>
+  <div><b>Qoyma — Help</b> <span>User guide for the store staff</span></div>
+  <div>
+    <span>{{ request.user.username }} ({{ request.user.role }})</span>
+    <a href="/">Back to POS</a>
+  </div>
+</header>
+<main style="display:block">
+<article class="guide">
+<div class="toc">
+  <a href="#log-in">Log in</a>
+  <a href="#cashier-sell-products">Sell</a>
+  <a href="#manager-receive-goods-from-a-supplier">Receive goods</a>
+  <a href="#manager-products">Products</a>
+  <a href="#manager-daily-sales-report">Daily report</a>
+  <a href="#log-out">Log out</a>
+</div>
+<h1 id="qoyma-erp-user-guide">Qoyma ERP — User Guide</h1>
+<p>For the staff of Bereke Grocery Store. Author: Aizada Amanova</p>
+<h2 id="log-in">1. Log in</h2>
+<p>Open the system and enter your username and password.</p>
+<figure>
+<img src="{% static 'store/help/login.png' %}" alt="Login" />
+<figcaption aria-hidden="true">Login</figcaption>
+</figure>
+<table>
+<colgroup>
+<col style="width: 12%" />
+<col style="width: 87%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>Role</th>
+<th>What you can do</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Cashier</td>
+<td>Sell products</td>
+</tr>
+<tr class="even">
+<td>Manager</td>
+<td>Sell, receive goods, manage products, view the daily report</td>
+</tr>
+<tr class="odd">
+<td>Admin</td>
+<td>Everything, including the Admin panel</td>
+</tr>
+</tbody>
+</table>
+<h2 id="cashier-sell-products">2. Cashier: sell products</h2>
+<figure>
+<img src="{% static 'store/help/pos.png' %}" alt="POS" />
+<figcaption aria-hidden="true">POS</figcaption>
+</figure>
+<ol type="1">
+<li>Scan the barcode or type it (13 digits) in the barcode field.</li>
+<li>Enter the quantity and press <strong>Add</strong> (or Enter).</li>
+<li>Repeat for every product. To remove a line, press
+<strong>✕</strong>.</li>
+<li>Choose the payment method: <strong>Cash</strong>, <strong>Kaspi
+QR</strong> or <strong>Card</strong>.</li>
+<li>Press <strong>Complete sale</strong>. Stock decreases
+automatically.</li>
+</ol>
+<p>If something is wrong, the system shows a red message and
+<strong>nothing is saved</strong>:</p>
+<figure>
+<img src="{% static 'store/help/pos_error.png' %}" alt="Error" />
+<figcaption aria-hidden="true">Error</figcaption>
+</figure>
+<table>
+<thead>
+<tr class="header">
+<th>Message</th>
+<th>What to do</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Insufficient stock</td>
+<td>Sell a smaller quantity or tell the manager</td>
+</tr>
+<tr class="even">
+<td>Product not found</td>
+<td>Check the barcode or tell the manager</td>
+</tr>
+</tbody>
+</table>
+<h2 id="manager-receive-goods-from-a-supplier">3. Manager: receive goods
+from a supplier</h2>
+<figure>
+<img src="{% static 'store/help/receive.png' %}" alt="Receive stock" />
+<figcaption aria-hidden="true">Receive stock</figcaption>
+</figure>
+<ol type="1">
+<li>Press <strong>Receive stock</strong> at the top.</li>
+<li>Choose the supplier and scan the product barcode.</li>
+<li>Enter the quantity, purchase price and expiry date of the
+batch.</li>
+<li>Press <strong>Receive goods</strong>. Stock increases and the
+product row turns green.</li>
+</ol>
+<p>The system refuses: quantity 0 or less, goods that are already
+expired, an unknown barcode.</p>
+<h2 id="manager-products">4. Manager: products</h2>
+<figure>
+<img src="{% static 'store/help/products.png' %}" alt="Products" />
+<figcaption aria-hidden="true">Products</figcaption>
+</figure>
+<ul>
+<li><strong>Products</strong> — list of all products; search by name or
+barcode, tick <strong>Low stock only</strong> to see what to order.</li>
+<li><strong>+ New product</strong> — add a product. Price must be
+greater than 0, barcode must be 13 digits.</li>
+<li><strong>Edit / Delete</strong> — change or remove a product.</li>
+</ul>
+<h2 id="manager-daily-sales-report">5. Manager: daily sales report</h2>
+<figure>
+<img src="{% static 'store/help/report.png' %}" alt="Daily report" />
+<figcaption aria-hidden="true">Daily report</figcaption>
+</figure>
+<p>Press <strong>Daily report</strong>. You see for today:</p>
+<ul>
+<li>total sales, number of receipts and average receipt;</li>
+<li>amounts by payment method;</li>
+<li>top 5 products;</li>
+<li>products at or below the minimum stock — order them.</li>
+</ul>
+<h3 id="download-excel">Download Excel</h3>
+<p>Press <strong>Download Excel</strong> to get a ready report file
+<code>sales_YYYY-MM-DD.xlsx</code> with three sheets.</p>
+<p><strong>Summary</strong> — key numbers, payment methods with a chart,
+low stock:</p>
+<figure>
+<img src="{% static 'store/help/excel.png' %}" alt="Excel Summary" />
+<figcaption aria-hidden="true">Excel Summary</figcaption>
+</figure>
+<p><strong>Sales</strong> — every sold item with filters and a total
+row:</p>
+<figure>
+<img src="{% static 'store/help/excel_sales.png' %}" alt="Excel Sales" />
+<figcaption aria-hidden="true">Excel Sales</figcaption>
+</figure>
+<p><strong>Top products</strong> — best sellers with a chart:</p>
+<figure>
+<img src="{% static 'store/help/excel_top.png' %}" alt="Excel Top products" />
+<figcaption aria-hidden="true">Excel Top products</figcaption>
+</figure>
+<p><strong>Download CSV</strong> gives raw data for other programs (for
+Excel, use <strong>Download Excel</strong>).</p>
+<h2 id="log-out">6. Log out</h2>
+<p>Press <strong>Log out</strong> at the top right when you finish your
+shift.</p>
+
+
+</article>
+</main>
+</body>
+</html>

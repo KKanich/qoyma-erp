@@ -1,7 +1,7 @@
 from django.contrib.auth import views as auth_views
 from django.urls import path
 
-from . import catalog, inventory, phone_scanner, views
+from . import catalog, guide, inventory, phone_scanner, views
 
 urlpatterns = [
     path('scanner/sessions/', phone_scanner.create_session, name='scanner_create'),
@@ -29,4 +29,5 @@ urlpatterns = [
     path('report/', views.report_page, name='report_page'),
     path('report/csv/', views.report_csv, name='report_csv'),
     path('report/xlsx/', views.report_xlsx, name='report_xlsx'),
+    path('help/', guide.help_page, name='help_page'),
 ]
